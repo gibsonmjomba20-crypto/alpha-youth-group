@@ -16,17 +16,14 @@ export default function Login() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setMessage(`Error: ${error.message}`);
+      setLoading(false);
     } else {
       router.push("/dashboard"); 
     }
-    setLoading(false);
   };
 
   const inputStyle = { width: "100%", padding: "12px", backgroundColor: "#020617", border: "1px solid #334155", borderRadius: "8px", color: "white", marginBottom: "16px", outline: "none" };
@@ -47,7 +44,7 @@ export default function Login() {
 
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
           <input type="email" placeholder="Email Address" required style={inputStyle} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Password" required style={inputStyle} onChange={(e) => setPassword(e.target.value)} />
+          <input type="password" placeholder="ID Number (Password)" required style={inputStyle} onChange={(e) => setPassword(e.target.value)} />
           
           <button type="submit" disabled={loading} style={{ backgroundColor: "#eab308", color: "#020617", fontWeight: "bold", padding: "14px", borderRadius: "8px", marginTop: "8px", border: "none", fontSize: "16px", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.5 : 1 }}>
             {loading ? "Logging in..." : "Sign In"}
