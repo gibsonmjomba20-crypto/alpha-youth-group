@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle } from "lucide-react";
+import { Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle, ArrowLeft, Send } from "lucide-react";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -13,15 +13,19 @@ export default function Dashboard() {
   const [loans, setLoans] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Forms
   const [loanRequest, setLoanRequest] = useState({ amount: "", purpose: "", period: "1" });
   const [updateForm, setUpdateForm] = useState({ phone: "", county: "" });
   const [updateMsg, setUpdateMsg] = useState("");
+  const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
 
   const router = useRouter();
 
@@ -57,6 +61,18 @@ export default function Dashboard() {
     const { data: meet } = await supabase.from("meetings").select("*").order("meeting_date", { ascending: true }).limit(3);
     if (meet) setMeetings(meet);
 
+    const { data: ev } = await supabase.from("events").select("*").order("event_date", { ascending: true });
+    if (ev) setEvents(ev);
+
+    const { data: proj } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+    if (proj) setProjects(proj);
+
+    const { data: opp } = await supabase.from("opportunities").select("*").order("created_at", { ascending: false });
+    if (opp) setOpportunities(opp);
+
+    const { data: tk } = await supabase.from("support_tickets").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    if (tk) setTickets(tk);
+
     setLoading(false);
   };
 
@@ -77,6 +93,13 @@ export default function Dashboard() {
     e.preventDefault(); setUpdateMsg("Saving...");
     await supabase.from("profiles").update(updateForm).eq("id", profile.id);
     setProfile({ ...profile, ...updateForm }); setUpdateMsg("Profile updated!"); setTimeout(() => setUpdateMsg(""), 3000);
+  };
+
+  const handleSubmitTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await supabase.from("support_tickets").insert({ user_id: profile.id, subject: ticketForm.subject, message: ticketForm.message });
+    alert("Support ticket submitted! Admin will reply soon.");
+    setTicketForm({ subject: "", message: "" }); fetchDashboardData();
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
@@ -170,23 +193,6 @@ export default function Dashboard() {
                 <h3 style={{ fontSize: "18px", fontWeight: "800" }}>{shares}</h3>
               </div>
             </div>
-
-            <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={16} color={theme.accent} /> Meeting Schedules</h3>
-              </div>
-              {meetings.length === 0 ? (
-                <p style={{ fontSize: "12px", color: theme.textMuted }}>No meetings scheduled.</p>
-              ) : meetings.map(m => (
-                <div key={m.id} style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginBottom: "8px", borderLeft: `3px solid ${theme.blue}` }}>
-                  <p style={{ fontSize: "14px", fontWeight: "bold", color: theme.text }}>{m.title}</p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "8px" }}>
-                    <p style={{ fontSize: "12px", color: theme.textMuted, display: "flex", alignItems: "center", gap: "4px" }}><Clock size={12}/> {m.meeting_date} {m.time ? `at ${m.time}` : ''}</p>
-                    <p style={{ fontSize: "12px", color: theme.textMuted, display: "flex", alignItems: "center", gap: "4px" }}><MapPin size={12}/> {m.location}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
@@ -202,17 +208,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === "shares" && (
-          <div>
-            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>My Shares</h2>
-            <div style={{ backgroundColor: theme.card, padding: "40px 20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center" }}>
-               <TrendingUp size={48} color={theme.purple} style={{ margin: "0 auto 16px auto" }} />
-               <h3 style={{ fontSize: "36px", fontWeight: "900" }}>{shares}</h3>
-               <p style={{ color: theme.textMuted }}>Total Shares Owned</p>
-            </div>
-          </div>
-        )}
-
         {activeTab === "loans" && (
           <div>
             <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Loans Center</h2>
@@ -220,16 +215,13 @@ export default function Dashboard() {
               <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#10B981" }}>KES {loanLimit}</h3>
               <p style={{ fontSize: "12px", color: theme.textMuted }}>Your Max Eligibility (3x Savings)</p>
             </div>
-            
             <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "20px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>Apply for a Loan</h3>
               <form onSubmit={handleApplyLoan} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <input type="number" placeholder={`Amount (Max: ${loanLimit})`} required value={loanRequest.amount} onChange={e => setLoanRequest({...loanRequest, amount: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
                 <input type="text" placeholder="Purpose of Loan" required value={loanRequest.purpose} onChange={e => setLoanRequest({...loanRequest, purpose: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
                 <select value={loanRequest.period} onChange={e => setLoanRequest({...loanRequest, period: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }}>
-                  <option value="1">Repay in 1 Month</option>
-                  <option value="3">Repay in 3 Months</option>
-                  <option value="6">Repay in 6 Months</option>
+                  <option value="1">Repay in 1 Month</option><option value="3">Repay in 3 Months</option><option value="6">Repay in 6 Months</option>
                 </select>
                 <button type="submit" style={{ padding: "12px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT APPLICATION</button>
               </form>
@@ -255,12 +247,79 @@ export default function Dashboard() {
           <div>
             <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>More Services</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><Calendar size={28} color={theme.blue} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Events</p></div>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><Users size={28} color={theme.green} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Community Projects</p></div>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><BookOpen size={28} color={theme.accent} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Opportunities</p></div>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><FileText size={28} color={theme.purple} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Documents</p></div>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><HelpCircle size={28} color={theme.red} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Support</p></div>
+              <div onClick={() => setActiveTab("events_page")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><Calendar size={28} color={theme.blue} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Events</p></div>
+              <div onClick={() => setActiveTab("projects_page")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><Users size={28} color={theme.green} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Projects</p></div>
+              <div onClick={() => setActiveTab("opportunities_page")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><BookOpen size={28} color={theme.accent} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Opportunities</p></div>
+              <div onClick={() => setActiveTab("documents_page")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><FileText size={28} color={theme.purple} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Documents</p></div>
+              <div onClick={() => setActiveTab("support_page")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><HelpCircle size={28} color={theme.red} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Support</p></div>
               <div onClick={() => setActiveTab("settings")} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", cursor: "pointer" }}><Settings size={28} color={theme.textMuted} style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold" }}>Settings</p></div>
+            </div>
+          </div>
+        )}
+
+        {["events_page", "projects_page", "opportunities_page", "documents_page", "support_page"].includes(activeTab) && (
+          <button onClick={() => setActiveTab("more")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}>
+            <ArrowLeft size={16} /> Back to More
+          </button>
+        )}
+
+        {activeTab === "events_page" && (
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Upcoming Events</h2>
+            {events.length === 0 ? <p style={{ color: theme.textMuted }}>No upcoming events.</p> : events.map(e => (
+              <div key={e.id} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "12px" }}>
+                <h3 style={{ color: theme.accent, fontWeight: "bold" }}>{e.title}</h3>
+                <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}><Calendar size={12}/> {e.event_date} | <MapPin size={12}/> {e.location}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "projects_page" && (
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Community Projects</h2>
+            {projects.length === 0 ? <p style={{ color: theme.textMuted }}>No ongoing projects.</p> : projects.map(p => (
+              <div key={p.id} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "12px" }}>
+                <h3 style={{ color: theme.accent, fontWeight: "bold" }}>{p.title}</h3>
+                <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{p.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "opportunities_page" && (
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Youth Opportunities</h2>
+            {opportunities.length === 0 ? <p style={{ color: theme.textMuted }}>No opportunities listed.</p> : opportunities.map(o => (
+              <div key={o.id} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "12px" }}>
+                <h3 style={{ color: theme.accent, fontWeight: "bold" }}>{o.title}</h3>
+                <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{o.description}</p>
+                {o.link && <a href={o.link} target="_blank" style={{ color: theme.blue, fontSize: "12px", marginTop: "8px", display: "inline-block" }}>Apply Here</a>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "documents_page" && (
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>My Documents</h2>
+            <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center" }}>
+              <FileText size={40} color={theme.textMuted} style={{ margin: "0 auto 12px auto" }} />
+              <p style={{ color: theme.textMuted, fontSize: "14px" }}>Official documents like receipts, statements, and agreements will appear here once generated.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "support_page" && (
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Support Center</h2>
+            <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px" }}>Send a Message to Admin</h3>
+              <form onSubmit={handleSubmitTicket} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <input type="text" placeholder="Subject" required value={ticketForm.subject} onChange={e => setTicketForm({...ticketForm, subject: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <textarea placeholder="How can we help you?" required value={ticketForm.message} onChange={e => setTicketForm({...ticketForm, message: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white", height: "80px" }} />
+                <button type="submit" style={{ padding: "12px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SEND MESSAGE</button>
+              </form>
             </div>
           </div>
         )}
