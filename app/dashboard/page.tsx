@@ -2,10 +2,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle, ArrowLeft, Send, Share2, Palette, CreditCard, BadgeCheck, Zap, Gift, Smartphone, Landmark, GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, Search, MessagesSquare, X, MessageSquare, ExternalLink, LogOut, Presentation, HeartHandshake, LifeBuoy, AlertCircle } from "lucide-react";
+import { 
+  Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, 
+  Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, 
+  Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, 
+  Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle, ArrowLeft, Send, 
+  Share2, Palette, CreditCard, BadgeCheck, Zap, Gift, Smartphone, Landmark, 
+  GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, 
+  Search, MessagesSquare, X, MessageSquare, ExternalLink, LogOut, Presentation, 
+  HeartHandshake, LifeBuoy, AlertCircle, LayoutDashboard, MenuIcon
+} from "lucide-react";
 
 const THEMES = {
-  navy: { bg: "#0B1120", card: "#131C2E", border: "rgba(255, 255, 255, 0.08)", accent: "#FBBF24", text: "#F8FAFC", textMuted: "#94A3B8", purple: "#9333EA", blue: "#3B82F6", green: "#10B981", red: "#EF4444" }
+  navy: { bg: "#0B1120", card: "#131C2E", border: "rgba(255, 255, 255, 0.08)", accent: "#FBBF24", text: "#F8FAFC", textMuted: "#94A3B8", purple: "#9333EA", blue: "#3B82F6", green: "#10B981", red: "#EF4444", whatsapp: "#25D366" }
 };
 
 const MASTER_ADMIN_EMAIL = "gibsonmjomba20@gmail.com";
@@ -28,7 +37,8 @@ export default function Dashboard() {
   const [allCareRequests, setAllCareRequests] = useState<any[]>([]);
   const [totalGroupSavings, setTotalGroupSavings] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
+  const [financeFilter, setFinanceFilter] = useState("pending");
+  const [appSettings, setAppSettings] = useState<any>({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", whatsapp_link: "" });
   const [settingsMsg, setSettingsMsg] = useState("");
   
   // FORMS
@@ -38,10 +48,18 @@ export default function Dashboard() {
   const [careRequest, setCareRequest] = useState({ reason: "", isEmergency: false, agreed: false });
   const [newEvent, setNewEvent] = useState({ title: "", date: "", location: "" });
 
+  // BROADCAST STATE
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastContent, setBroadcastContent] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home"); 
   const [adminTab, setAdminTab] = useState("overview"); 
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // SIDEBAR STATE FOR ADMIN
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   
   const theme = THEMES.navy;
   const router = useRouter();
@@ -84,8 +102,8 @@ export default function Dashboard() {
       const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (users) setAllUsers(users);
       
-      const { data: pendingP } = await supabase.from("payments").select(`*, profiles:user_id (full_name, phone)`).eq("status", "pending");
-      if (pendingP) setAllPayments(pendingP);
+      const { data: allP } = await supabase.from("payments").select(`*, profiles:user_id (full_name, phone)`).order("created_at", { ascending: false });
+      if (allP) setAllPayments(allP);
       
       const { data: allL } = await supabase.from("loans").select("*").eq("status", "approved");
       if (allL) setAllLoans(allL);
@@ -103,11 +121,6 @@ export default function Dashboard() {
   useEffect(() => { fetchDashboardData(); }, [router]);
 
   // MEMBER ACTIONS
-  const handleUpdateGoal = async () => {
-    await supabase.from("profiles").update({ savings_goal: parseFloat(newGoal) }).eq("id", profile.id);
-    setSavingsGoal(parseFloat(newGoal)); alert("Goal updated!");
-  };
-
   const handleApplyLoan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (parseFloat(loanRequest.amount) > savings * 3) return alert(`❌ REJECTED: Max loan is KES ${savings * 3}`);
@@ -154,6 +167,17 @@ export default function Dashboard() {
     alert("Event Published!"); setNewEvent({ title: "", date: "", location: "" }); fetchDashboardData();
   };
 
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBroadcastSending(true);
+    const { error } = await supabase.from("announcements").insert({ title: broadcastTitle, content: broadcastContent });
+    setBroadcastSending(false);
+    if (error) return alert("Error: " + error.message);
+    alert("Broadcast sent successfully!");
+    setBroadcastTitle(""); setBroadcastContent("");
+    fetchDashboardData();
+  };
+
   const handleRoleChange = async (userId: string, newRole: string) => {
     if (!window.confirm(`Change role to ${newRole.toUpperCase()}?`)) return;
     await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
@@ -170,14 +194,18 @@ export default function Dashboard() {
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault(); setSettingsMsg("Saving...");
     await supabase.from("app_settings").update({ 
-      paybill_number: appSettings.paybill_number, paybill_account: appSettings.paybill_account, app_name: appSettings.app_name, app_slogan: appSettings.app_slogan 
+      paybill_number: appSettings.paybill_number, 
+      paybill_account: appSettings.paybill_account, 
+      app_name: appSettings.app_name, 
+      app_slogan: appSettings.app_slogan,
+      whatsapp_link: appSettings.whatsapp_link
     }).eq("id", 1);
-    setSettingsMsg("Settings Saved!"); setTimeout(() => setSettingsMsg(""), 3000);
+    setSettingsMsg("Settings Saved!"); setTimeout(() => setSettingsMsg(""), 3000); fetchDashboardData();
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
 
-  if (loading) return <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>LOADING...</div>;
+  if (loading) return <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center" }}><RefreshCw className="animate-spin" size={32} /></div>;
 
   const goalProgress = Math.min((savings / savingsGoal) * 100, 100);
   const isMasterAdmin = profile.email === MASTER_ADMIN_EMAIL || profile.role === 'admin';
@@ -193,7 +221,7 @@ export default function Dashboard() {
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.8)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "80px" }}>
             <div style={{ backgroundColor: theme.card, width: "90%", maxWidth: "400px", borderRadius: "16px", border: `1px solid ${theme.border}`, padding: "20px", maxHeight: "70vh", overflowY: "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.border}`, paddingBottom: "12px", marginBottom: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "bold", color: theme.accent }}>Notifications</h3>
+                <h3 style={{ fontSize: "18px", fontWeight: "bold", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Bell size={20} /> Notifications</h3>
                 <button onClick={() => setShowNotifications(false)} style={{ background: "none", border: "none", color: theme.textMuted, cursor: "pointer" }}><X size={20} /></button>
               </div>
               {announcements.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No notifications yet.</p> : announcements.map(n => (
@@ -233,7 +261,8 @@ export default function Dashboard() {
               </div>
 
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
-              <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px", scrollbarWidth: "none" }}>
+                <style>{`::-webkit-scrollbar { display: none; }`}</style>
                 
                 <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
                   <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(147, 51, 234, 0.4)` }}><Wallet size={24} color="#fff" /></div>
@@ -255,6 +284,11 @@ export default function Dashboard() {
                   <span style={{ fontSize: "10px", fontWeight: "600" }}>Events</span>
                 </div>
 
+                <a href={appSettings.whatsapp_link || "https://chat.whatsapp.com/"} target="_blank" rel="noopener noreferrer" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none", color: theme.text }}>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.whatsapp, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(37, 211, 102, 0.4)` }}><MessageCircle size={24} color="#fff" /></div>
+                  <span style={{ fontSize: "10px", fontWeight: "600" }}>WhatsApp</span>
+                </a>
+
                 <a href="tel:0704785116" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none", color: theme.text }}>
                   <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.red, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(239, 68, 68, 0.4)` }}><Phone size={24} color="#fff" /></div>
                   <span style={{ fontSize: "10px", fontWeight: "600" }}>Support</span>
@@ -274,82 +308,16 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ALPHA CARE TAB */}
-          {activeTab === "alphacare" && (
-            <div>
-              <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px", color: "#F43F5E" }}>Alpha Care Welfare</h2>
-              <p style={{ fontSize: "12px", color: theme.textMuted, marginBottom: "20px" }}>Apply for emergency support from the group.</p>
-
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
-                <form onSubmit={handleApplyCare} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <textarea placeholder="Explain your situation (Why do you need help?)" required value={careRequest.reason} onChange={e => setCareRequest({...careRequest, reason: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white", height: "100px" }} />
-                  
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }}>
-                    <input type="checkbox" checked={careRequest.isEmergency} onChange={e => setCareRequest({...careRequest, isEmergency: e.target.checked})} />
-                    This is an emergency
-                  </label>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: theme.accent }}>
-                    <input type="checkbox" required checked={careRequest.agreed} onChange={e => setCareRequest({...careRequest, agreed: e.target.checked})} />
-                    I agree to the Alpha Care terms and understand this requires Admin approval.
-                  </label>
-
-                  <button type="submit" style={{ padding: "12px", backgroundColor: "#F43F5E", color: "#fff", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT APPLICATION</button>
-                </form>
-              </div>
-
-              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px" }}>My Applications</h3>
-              {myCareRequests.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No applications yet.</p> : myCareRequests.map(r => (
-                <div key={r.id} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, marginBottom: "8px" }}>
-                  <p style={{ fontSize: "14px", fontWeight: "bold" }}>{r.reason}</p>
-                  <p style={{ fontSize: "10px", color: theme.textMuted, marginTop: "4px" }}>Emergency: {r.isEmergency ? "YES" : "NO"}</p>
-                  <p style={{ fontSize: "12px", fontWeight: "bold", marginTop: "8px", color: r.status === 'approved' ? theme.green : r.status === 'rejected' ? theme.red : theme.accent }}>{r.status.toUpperCase()}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* SAVINGS TAB */}
           {activeTab === "savings" && (
             <div>
               <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>My Savings</h2>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}><Wallet color={theme.accent}/> My Savings</h2>
               <div style={{ backgroundColor: theme.card, padding: "32px 20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center" }}>
-                <Wallet size={40} color={theme.accent} style={{ margin: "0 auto 12px auto" }} />
                 <p style={{ color: theme.textMuted, fontSize: "14px" }}>Verified Balance</p>
                 <h3 style={{ fontSize: "36px", fontWeight: "900", color: theme.accent }}>KES {savings}</h3>
-                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>Add Savings via M-Pesa</button>
+                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%" }}><Smartphone size={18}/> Add Savings via M-Pesa</button>
               </div>
-            </div>
-          )}
-
-          {/* LOANS TAB */}
-          {activeTab === "loans" && (
-            <div>
-              <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Apply for a Loan</h2>
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-                <form onSubmit={handleApplyLoan} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <input type="number" placeholder={`Amount (Max: ${savings * 3})`} required value={loanRequest.amount} onChange={e => setLoanRequest({...loanRequest, amount: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-                  <input type="text" placeholder="Purpose" required value={loanRequest.purpose} onChange={e => setLoanRequest({...loanRequest, purpose: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-                  <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT APPLICATION</button>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* EVENTS TAB */}
-          {activeTab === "events" && (
-            <div>
-              <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Upcoming Events</h2>
-              {events.length === 0 ? <p style={{ color: theme.textMuted }}>No events scheduled.</p> : events.map(e => (
-                <div key={e.id} style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "12px" }}>
-                  <h3 style={{ color: theme.accent, fontWeight: "bold" }}>{e.title}</h3>
-                  <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{e.event_date} | {e.location}</p>
-                </div>
-              ))}
             </div>
           )}
         </main>
@@ -365,135 +333,242 @@ export default function Dashboard() {
   }
 
   // ==========================================
-  // MASTER ADMIN DASHBOARD
+  // MASTER ADMIN DASHBOARD (WITH SLIDING SIDEBAR)
   // ==========================================
-  return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", paddingBottom: "80px" }}>
-      
-      <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: `1px solid ${theme.purple}` }}>
-         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-           <div>
-             <h1 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>Admin Dashboard</h1>
-             <p style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>Master Account: {profile.full_name}</p>
-           </div>
-           <button onClick={handleLogout} style={{ padding: "8px 16px", backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "8px", fontWeight: "bold" }}>LOGOUT</button>
-         </div>
-      </div>
+  
+  const adminMenuItems = [
+    { id: "overview", label: "Overview", icon: <LayoutDashboard size={20} /> },
+    { id: "finance", label: "Finance", icon: <Wallet size={20} /> },
+    { id: "directory", label: "Directory", icon: <Users size={20} /> },
+    { id: "broadcast", label: "Broadcast", icon: <Megaphone size={20} /> },
+    { id: "care", label: "Alpha Care", icon: <HeartHandshake size={20} /> },
+    { id: "content", label: "Events", icon: <CalendarDays size={20} /> },
+    { id: "settings", label: "Settings", icon: <Settings size={20} /> },
+  ];
 
-      <div style={{ padding: "20px" }}>
-        
-        {/* ADMIN NAVIGATION TABS */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "24px", overflowX: "auto", paddingBottom: "10px" }}>
-          <button onClick={() => setAdminTab("overview")} style={{ padding: "10px 16px", borderRadius: "8px", backgroundColor: adminTab === "overview" ? theme.accent : theme.card, color: adminTab === "overview" ? "#000" : theme.text, fontWeight: "bold", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Overview</button>
-          <button onClick={() => setAdminTab("care")} style={{ padding: "10px 16px", borderRadius: "8px", backgroundColor: adminTab === "care" ? "#F43F5E" : theme.card, color: adminTab === "care" ? "#fff" : theme.text, fontWeight: "bold", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Alpha Care</button>
-          <button onClick={() => setAdminTab("approvals")} style={{ padding: "10px 16px", borderRadius: "8px", backgroundColor: adminTab === "approvals" ? theme.accent : theme.card, color: adminTab === "approvals" ? "#000" : theme.text, fontWeight: "bold", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Approvals</button>
-          <button onClick={() => setAdminTab("content")} style={{ padding: "10px 16px", borderRadius: "8px", backgroundColor: adminTab === "content" ? theme.accent : theme.card, color: adminTab === "content" ? "#000" : theme.text, fontWeight: "bold", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Content</button>
-          <button onClick={() => setAdminTab("members")} style={{ padding: "10px 16px", borderRadius: "8px", backgroundColor: adminTab === "members" ? theme.accent : theme.card, color: adminTab === "members" ? "#000" : theme.text, fontWeight: "bold", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Members</button>
+  return (
+    <div style={{ backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", display: "flex" }}>
+      
+      {/* SIDEBAR OVERLAY */}
+      {isAdminMenuOpen && (
+        <div onClick={() => setIsAdminMenuOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.7)", zIndex: 999 }} />
+      )}
+
+      {/* SLIDING SIDEBAR */}
+      <div style={{ 
+        position: "fixed", top: 0, left: isAdminMenuOpen ? 0 : "-280px", width: "260px", height: "100vh", 
+        backgroundColor: theme.card, zIndex: 1000, transition: "0.3s ease-in-out", 
+        borderRight: `1px solid ${theme.border}`, padding: "20px", display: "flex", flexDirection: "column" 
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "800", color: theme.accent }}>Admin Menu</h2>
+          <button onClick={() => setIsAdminMenuOpen(false)} style={{ background: "none", border: "none", color: theme.textMuted }}><X size={24} /></button>
         </div>
 
-        {/* ALPHA CARE ADMIN TAB */}
-        {adminTab === "care" && (
-          <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `2px solid #F43F5E` }}>
-            <h3 style={{ marginBottom: "16px", color: "#F43F5E" }}>Alpha Care Applications</h3>
-            {allCareRequests.length === 0 ? <p style={{ color: theme.textMuted }}>No pending care requests.</p> : allCareRequests.map(c => (
-              <div key={c.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "16px", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${theme.border}` }}>
-                <p style={{ fontWeight: "bold", color: "#F43F5E" }}>{c.profiles?.full_name}</p>
-                <p style={{ fontSize: "12px", color: theme.textMuted }}>Phone: {c.profiles?.phone || "N/A"}</p>
-                
-                <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${c.is_emergency ? theme.red : theme.blue}` }}>
-                  <p style={{ fontSize: "14px", color: theme.text }}><strong>Reason:</strong> {c.reason}</p>
-                  <p style={{ fontSize: "12px", marginTop: "8px", fontWeight: "bold", color: c.is_emergency ? theme.red : theme.textMuted }}>
-                    {c.is_emergency ? "🚨 EMERGENCY" : "Standard Request"}
-                  </p>
-                </div>
+        {adminMenuItems.map((item) => (
+          <button 
+            key={item.id} 
+            onClick={() => { setAdminTab(item.id); setIsAdminMenuOpen(false); }} 
+            style={{ 
+              display: "flex", alignItems: "center", gap: "12px", padding: "14px", borderRadius: "8px", 
+              backgroundColor: adminTab === item.id ? "rgba(251, 191, 36, 0.1)" : "transparent", 
+              color: adminTab === item.id ? theme.accent : theme.textMuted, 
+              border: "none", fontWeight: "bold", cursor: "pointer", marginBottom: "8px", textAlign: "left", fontSize: "15px"
+            }}
+          >
+            {item.icon} {item.label}
+          </button>
+        ))}
 
-                <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                  <button onClick={() => handleCareAction(c.id, "approved")} style={{ flex: 1, padding: "10px", backgroundColor: theme.green, color: "#000", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>APPROVE</button>
-                  <button onClick={() => handleCareAction(c.id, "rejected")} style={{ flex: 1, padding: "10px", backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>REJECT</button>
+        <div style={{ marginTop: "auto" }}>
+          <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px", width: "100%", borderRadius: "8px", backgroundColor: "rgba(239, 68, 68, 0.1)", color: theme.red, border: "none", fontWeight: "bold", cursor: "pointer" }}>
+            <LogOut size={20} /> Logout
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div style={{ flex: 1, paddingBottom: "80px", width: "100%" }}>
+        <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: `1px solid ${theme.purple}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+             <button onClick={() => setIsAdminMenuOpen(true)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><MenuIcon size={28} /></button>
+             <div>
+               <h1 style={{ fontSize: "20px", fontWeight: "800", color: "#fff" }}>Admin Portal</h1>
+             </div>
+           </div>
+           <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", border: `1px solid ${theme.accent}` }}>{profile.full_name.charAt(0)}</div>
+        </div>
+
+        <div style={{ padding: "20px" }}>
+          
+          {/* OVERVIEW TAB */}
+          {adminTab === "overview" && (
+            <div>
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+                <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}>
+                  <Users size={24} color="#9333EA" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Total Members</p><h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allUsers.length}</h3>
+                </div>
+                <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
+                  <FileText size={24} color="#FBBF24" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Approvals</p><h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allPayments.filter(p=>p.status === "pending").length}</h3>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* OVERVIEW TAB (Kept as is) */}
-        {adminTab === "overview" && (
-          <div>
-             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-              <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}>
-                <Users size={24} color="#9333EA" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Total Members</p><h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allUsers.length}</h3>
-              </div>
-              <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                <FileText size={24} color="#FBBF24" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Approvals</p><h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allPayments.length}</h3>
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Calendar size={18}/> Schedule Meeting</h3>
+                <form onSubmit={handleCreateMeeting} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <input type="text" placeholder="Meeting Title" required value={newMeeting.title} onChange={e => setNewMeeting({...newMeeting, title: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
+                  <input type="date" required value={newMeeting.date} onChange={e => setNewMeeting({...newMeeting, date: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
+                  <input type="text" placeholder="Location" required value={newMeeting.location} onChange={e => setNewMeeting({...newMeeting, location: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
+                  <button type="submit" style={{ padding: "10px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><PlusCircle size={18}/> PUBLISH</button>
+                </form>
               </div>
             </div>
-            <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", color: theme.accent }}>Schedule Meeting</h3>
-              <form onSubmit={handleCreateMeeting} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <input type="text" placeholder="Meeting Title" required value={newMeeting.title} onChange={e => setNewMeeting({...newMeeting, title: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
-                <input type="date" required value={newMeeting.date} onChange={e => setNewMeeting({...newMeeting, date: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
-                <input type="text" placeholder="Location" required value={newMeeting.location} onChange={e => setNewMeeting({...newMeeting, location: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
-                <button type="submit" style={{ padding: "10px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer" }}>PUBLISH</button>
+          )}
+
+          {/* FINANCE TAB */}
+          {adminTab === "finance" && (
+            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+              <h3 style={{ marginBottom: "16px", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Wallet size={20}/> Finance Ledger</h3>
+              <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+                {["pending", "verified", "rejected"].map(status => (
+                  <button key={status} onClick={() => setFinanceFilter(status)} style={{ padding: "8px 12px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", textTransform: "capitalize", backgroundColor: financeFilter === status ? theme.accent : "rgba(0,0,0,0.3)", color: financeFilter === status ? "#000" : "white" }}>{status}</button>
+                ))}
+              </div>
+
+              {allPayments.filter(p => p.status === financeFilter).length === 0 ? <p style={{ color: theme.textMuted }}>No {financeFilter} payments found.</p> : allPayments.filter(p => p.status === financeFilter).map(p => (
+                <div key={p.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "16px", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${theme.border}` }}>
+                  <p style={{ fontWeight: "bold" }}>{p.profiles?.full_name}</p>
+                  <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${theme.accent}` }}>
+                    <p style={{ fontSize: "12px", color: theme.textMuted }}>Code: <strong style={{ color: theme.accent }}>{p.mpesa_code}</strong> | KES {p.amount}</p>
+                  </div>
+                  {p.status === "pending" && (
+                    <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                      <button onClick={() => handleApprovePayment(p.id, p.user_id, p.amount)} style={{ flex: 1, padding: "10px", backgroundColor: theme.green, color: "#000", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}><CheckCircle2 size={16}/> APPROVE</button>
+                      <button onClick={() => handleRejectPayment(p.id)} style={{ flex: 1, padding: "10px", backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}><X size={16}/> REJECT</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* DIRECTORY TAB */}
+          {adminTab === "directory" && (
+            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h3 style={{ color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Users size={20}/> Directory</h3>
+              </div>
+              <div style={{ position: "relative", marginBottom: "16px" }}>
+                <Search size={18} color={theme.textMuted} style={{ position: "absolute", left: "12px", top: "12px" }} />
+                <input type="text" placeholder="Search members..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: "100%", padding: "12px 12px 12px 40px", borderRadius: "8px", border: `1px solid ${theme.border}`, backgroundColor: "rgba(0,0,0,0.3)", color: "white", outline: "none" }} />
+              </div>
+              {allUsers.filter(u => u.full_name.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
+                <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.border}`, padding: "12px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>{u.full_name.charAt(0)}</div>
+                    <div>
+                      <p style={{ fontWeight: "bold" }}>{u.full_name}</p>
+                      <p style={{ fontSize: "10px", color: theme.textMuted }}>Code: {u.member_code || "PENDING"}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                     {u.phone && (
+                       <a href={`https://wa.me/${u.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: theme.whatsapp, display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", backgroundColor: "rgba(37, 211, 102, 0.1)", borderRadius: "4px" }}>
+                         <MessageCircle size={18} />
+                       </a>
+                     )}
+                     <button onClick={() => handleStatusChange(u.id, u.membership_status)} style={{ backgroundColor: u.membership_status === 'active' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: u.membership_status === 'active' ? '#EF4444' : '#10B981', padding: "6px 12px", borderRadius: "4px", border: "none", cursor: "pointer", fontWeight: "bold" }}>
+                       {u.membership_status === 'active' ? 'Suspend' : 'Activate'}
+                     </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* BROADCAST TAB */}
+          {adminTab === "broadcast" && (
+            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+              <h3 style={{ marginBottom: "16px", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Megaphone size={20}/> Send Announcement</h3>
+              <form onSubmit={handleSendBroadcast} style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+                <input type="text" placeholder="Announcement Title" required value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <textarea placeholder="Write your message here..." required rows={4} value={broadcastContent} onChange={e => setBroadcastContent(e.target.value)} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <button type="submit" disabled={broadcastSending} style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <Send size={18}/> {broadcastSending ? "SENDING..." : "SEND BROADCAST"}
+                </button>
+              </form>
+              
+              <h4 style={{ marginBottom: "12px", color: theme.text }}>Recent Announcements</h4>
+              {announcements.map(a => (
+                <div key={a.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "12px", borderRadius: "8px", marginBottom: "8px", border: `1px solid ${theme.border}` }}>
+                  <strong style={{ color: theme.accent }}>{a.title}</strong>
+                  <p style={{ margin: "4px 0", color: theme.textMuted, fontSize: "14px" }}>{a.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SETTINGS TAB */}
+          {adminTab === "settings" && (
+            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+              <h3 style={{ marginBottom: "16px", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><Settings size={20}/> App Settings</h3>
+              <form onSubmit={handleUpdateSettings} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <label style={{ fontSize: "12px", color: theme.textMuted }}>App Name</label>
+                <input type="text" placeholder="App Name" required value={appSettings.app_name || ""} onChange={e => setAppSettings({...appSettings, app_name: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                
+                <label style={{ fontSize: "12px", color: theme.textMuted }}>Slogan</label>
+                <input type="text" placeholder="Slogan" required value={appSettings.app_slogan || ""} onChange={e => setAppSettings({...appSettings, app_slogan: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                
+                <label style={{ fontSize: "12px", color: theme.textMuted }}>WhatsApp Group Link</label>
+                <input type="url" placeholder="https://chat.whatsapp.com/..." required value={appSettings.whatsapp_link || ""} onChange={e => setAppSettings({...appSettings, whatsapp_link: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+
+                <label style={{ fontSize: "12px", color: theme.textMuted }}>Paybill Number</label>
+                <input type="text" placeholder="Paybill Number" required value={appSettings.paybill_number || ""} onChange={e => setAppSettings({...appSettings, paybill_number: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+
+                <label style={{ fontSize: "12px", color: theme.textMuted }}>Paybill Account</label>
+                <input type="text" placeholder="Account Number" required value={appSettings.paybill_account || ""} onChange={e => setAppSettings({...appSettings, paybill_account: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+
+                <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><Save size={18}/> SAVE SETTINGS</button>
+                {settingsMsg && <p style={{ color: theme.green, fontWeight: "bold", textAlign: "center", marginTop: "10px" }}>{settingsMsg}</p>}
               </form>
             </div>
-          </div>
-        )}
-
-        {/* (Other admin tabs like Approvals, Members, Content are kept exactly the same as your previous code to save space) */}
-        {adminTab === "approvals" && (
-          <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-            <h3 style={{ marginBottom: "16px", color: theme.accent }}>Pending Payments</h3>
-            {allPayments.length === 0 ? <p style={{ color: theme.textMuted }}>No pending payments.</p> : allPayments.map(p => (
-              <div key={p.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "16px", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${theme.border}` }}>
-                <p style={{ fontWeight: "bold" }}>{p.profiles?.full_name}</p>
-                <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${theme.accent}` }}>
-                  <p style={{ fontSize: "12px", color: theme.textMuted }}>Code: <strong style={{ color: theme.accent }}>{p.mpesa_code}</strong> | KES {p.amount}</p>
-                </div>
-                <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                  <button onClick={() => handleApprovePayment(p.id, p.user_id, p.amount)} style={{ flex: 1, padding: "10px", backgroundColor: theme.green, color: "#000", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>APPROVE</button>
-                  <button onClick={() => handleRejectPayment(p.id)} style={{ flex: 1, padding: "10px", backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>REJECT</button>
-                </div>
+          )}
+          
+          {/* PLACEHOLDERS FOR REMAINING TABS */}
+          {adminTab === "care" && (
+             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `2px solid #F43F5E` }}>
+                <h3 style={{ marginBottom: "16px", color: "#F43F5E", display: "flex", alignItems: "center", gap: "8px" }}><HeartHandshake size={20}/> Alpha Care Applications</h3>
+                {allCareRequests.length === 0 ? <p style={{ color: theme.textMuted }}>No pending care requests.</p> : allCareRequests.map(c => (
+                  <div key={c.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "16px", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${theme.border}` }}>
+                    <p style={{ fontWeight: "bold", color: "#F43F5E" }}>{c.profiles?.full_name}</p>
+                    <p style={{ fontSize: "12px", color: theme.textMuted }}>Phone: {c.profiles?.phone || "N/A"}</p>
+                    <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${c.is_emergency ? theme.red : theme.blue}` }}>
+                      <p style={{ fontSize: "14px", color: theme.text }}><strong>Reason:</strong> {c.reason}</p>
+                      <p style={{ fontSize: "12px", marginTop: "8px", fontWeight: "bold", color: c.is_emergency ? theme.red : theme.textMuted }}>
+                        {c.is_emergency ? "🚨 EMERGENCY" : "Standard Request"}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                      <button onClick={() => handleCareAction(c.id, "approved")} style={{ flex: 1, padding: "10px", backgroundColor: theme.green, color: "#000", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}><CheckCircle2 size={16}/> APPROVE</button>
+                      <button onClick={() => handleCareAction(c.id, "rejected")} style={{ flex: 1, padding: "10px", backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}><X size={16}/> REJECT</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+          )}
 
-        {adminTab === "content" && (
-          <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-            <h3 style={{ marginBottom: "16px", color: theme.accent }}>Create Event</h3>
-            <form onSubmit={handleCreateEvent} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <input type="text" placeholder="Event Title" required value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-              <input type="date" required value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-              <input type="text" placeholder="Location" required value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-              <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>PUBLISH EVENT</button>
-            </form>
-          </div>
-        )}
-
-        {adminTab === "members" && (
-          <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ color: theme.accent }}>Member Directory</h3>
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ padding: "8px 10px", borderRadius: "8px", border: `1px solid ${theme.border}`, backgroundColor: "rgba(0,0,0,0.3)", color: "white", outline: "none" }} />
+          {adminTab === "content" && (
+            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+              <h3 style={{ marginBottom: "16px", color: theme.accent, display: "flex", alignItems: "center", gap: "8px" }}><CalendarDays size={20}/> Create Event</h3>
+              <form onSubmit={handleCreateEvent} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <input type="text" placeholder="Event Title" required value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <input type="date" required value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <input type="text" placeholder="Location" required value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><PlusCircle size={18}/> PUBLISH EVENT</button>
+              </form>
             </div>
-            {allUsers.filter(u => u.full_name.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
-              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.border}`, padding: "12px 0" }}>
-                <div>
-                  <p style={{ fontWeight: "bold" }}>{u.full_name}</p>
-                  <p style={{ fontSize: "10px", color: theme.textMuted }}>Code: {u.member_code || "PENDING"}</p>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                   <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} style={{ padding: "6px", borderRadius: "4px", backgroundColor: "rgba(0,0,0,0.5)", color: "white", border: `1px solid ${theme.border}` }}>
-                      <option value="member">Member</option><option value="chairman">Chairman</option><option value="treasurer">Treasurer</option><option value="secretary">Secretary</option><option value="admin">Admin</option>
-                   </select>
-                   <button onClick={() => handleStatusChange(u.id, u.membership_status)} style={{ backgroundColor: u.membership_status === 'active' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: u.membership_status === 'active' ? '#EF4444' : '#10B981', padding: "6px 12px", borderRadius: "4px", border: "none", cursor: "pointer", fontWeight: "bold" }}>
-                     {u.membership_status === 'active' ? 'Suspend' : 'Activate'}
-                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+          )}
+
+        </div>
       </div>
     </div>
   );
