@@ -20,24 +20,28 @@ export default function Dashboard() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   
+  // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [searchQuery, setSearchQuery] = useState("");
   
+  // SETTINGS & TEMPLATES
   const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
   const [settingsMsg, setSettingsMsg] = useState("");
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("navy");
   
   const theme = THEMES[themeName];
 
+  // FORMS
   const [loanRequest, setLoanRequest] = useState({ amount: "", purpose: "", period: "1" });
   const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
   const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "" });
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("home"); 
-  const [adminTab, setAdminTab] = useState("overview"); 
+  const [activeTab, setActiveTab] = useState("home"); // Member view
+  const [adminTab, setAdminTab] = useState("overview"); // Admin view
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const router = useRouter();
 
@@ -88,6 +92,7 @@ export default function Dashboard() {
 
   useEffect(() => { fetchDashboardData(); }, [router]);
 
+  // --- MEMBER ACTIONS ---
   const handleApplyLoan = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(loanRequest.amount);
@@ -102,6 +107,7 @@ export default function Dashboard() {
     alert("Message sent!"); setTicketForm({ subject: "", message: "" }); fetchDashboardData();
   };
 
+  // --- ADMIN ACTIONS ---
   const handleVerifyPayment = async (id: string, uid: string, isRegistration: boolean) => {
     const code = `AYG-${Math.floor(1000 + Math.random() * 9000)}`;
     await supabase.from("payments").update({ status: "verified" }).eq("id", id);
