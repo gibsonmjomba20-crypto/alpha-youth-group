@@ -17,7 +17,9 @@ export default function DashboardRouter() {
         router.push("/login");
         return;
       }
+
       const { data: profile } = await supabase.from("profiles").select("role, email").eq("id", user.id).single();
+
       if (profile) {
         if (profile.email === MASTER_ADMIN_EMAIL || profile.role === 'admin') {
           router.push("/dashboard/admin");
