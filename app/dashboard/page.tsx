@@ -19,22 +19,17 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   
-  // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [searchQuery, setSearchQuery] = useState("");
   
-  // SETTINGS & TEMPLATES
   const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
   const [settingsMsg, setSettingsMsg] = useState("");
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("navy");
   
   const theme = THEMES[themeName];
-
-  // FORMS
   const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "" });
-
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home"); 
   const [adminTab, setAdminTab] = useState("overview"); 
@@ -63,7 +58,6 @@ export default function Dashboard() {
     const { data: ev } = await supabase.from("events").select("*").order("event_date", { ascending: true });
     if (ev) setEvents(ev);
 
-    // FETCH APP SETTINGS (Templates & Themes)
     const { data: settingsData } = await supabase.from("app_settings").select("*").single();
     if (settingsData) {
       setAppSettings(settingsData);
@@ -142,19 +136,6 @@ export default function Dashboard() {
 
   if (loading) return <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold" }}>LOADING...</div>;
 
-  // PENDING GATE
-  if (profile.membership_status !== 'active' && profile.role === 'member') {
-    return (
-      <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "sans-serif", textAlign: "center" }}>
-        <Clock size={48} color={theme.accent} style={{ marginBottom: "20px" }} />
-        <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "12px" }}>Application Pending</h2>
-        <p style={{ color: theme.textMuted, fontSize: "14px", maxWidth: "400px", marginBottom: "24px" }}>Your KES 1,000 payment is under review. Call <strong>0704785116</strong> to verify your code.</p>
-        <a href="tel:0704785116" style={{ padding: "14px 24px", backgroundColor: theme.green, color: "#000", borderRadius: "8px", fontWeight: "bold", textDecoration: "none" }}>Call Support</a>
-        <button onClick={handleLogout} style={{ marginTop: "24px", background: "transparent", border: "none", color: theme.textMuted, textDecoration: "underline", cursor: "pointer" }}>Logout</button>
-      </div>
-    );
-  }
-
   // ==========================================
   // SUPER ADMIN / EXECUTIVE PORTAL
   // ==========================================
@@ -162,7 +143,6 @@ export default function Dashboard() {
     return (
       <div style={{ backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", paddingBottom: "80px", transition: "background-color 0.3s" }}>
         
-        {/* HEADER */}
         <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: `1px solid ${theme.purple}`, borderBottomLeftRadius: "24px", borderBottomRightRadius: "24px" }}>
            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
              <div>
@@ -179,7 +159,6 @@ export default function Dashboard() {
 
         <div style={{ padding: "20px" }}>
           
-          {/* OVERVIEW TAB */}
           {adminTab === "overview" && (
             <div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
@@ -189,7 +168,6 @@ export default function Dashboard() {
                 <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(239, 68, 68, 0.3)" }}><CreditCard size={20} color="#EF4444" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Payments</p><h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>{allPayments.length}</h3></div>
               </div>
 
-              {/* QUICK ACTIONS */}
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "24px" }}>
                 <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #FBBF24", cursor: "pointer", textAlign: "center" }}><UserCheck size={20} color="#FBBF24" style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Review Apps</p></div>
@@ -199,7 +177,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* APPROVALS TAB */}
           {adminTab === "approvals" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
               <h3 style={{ marginBottom: "16px", color: theme.accent }}>Pending Registrations (KES 1000)</h3>
@@ -212,7 +189,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* FINANCE TAB */}
           {adminTab === "finance" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
               <h3 style={{ marginBottom: "16px", color: theme.accent }}>Pending Savings Payments</h3>
@@ -225,7 +201,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* MEMBERS TAB (SEE PEOPLE) */}
           {adminTab === "members" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `2px solid ${theme.red}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -261,15 +236,12 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* SETTINGS TAB (TEMPLATES & THEMES) */}
           {adminTab === "settings" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
               <h3 style={{ marginBottom: "16px", color: theme.accent }}>App Settings (Templates & Themes)</h3>
               {settingsMsg && <p style={{ color: "#10B981", marginBottom: "12px" }}>{settingsMsg}</p>}
               
               <form onSubmit={handleUpdateSettings} style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "500px" }}>
-                
-                {/* TEMPLATES */}
                 <div>
                   <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>App Name (Template)</label>
                   <input type="text" required value={appSettings.app_name} onChange={e => setAppSettings({...appSettings, app_name: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
@@ -280,7 +252,6 @@ export default function Dashboard() {
                   <input type="text" required value={appSettings.app_slogan} onChange={e => setAppSettings({...appSettings, app_slogan: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
                 </div>
 
-                {/* THEME BACKGROUND */}
                 <div style={{ marginTop: "12px" }}>
                   <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Background Theme</label>
                   <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
@@ -292,7 +263,6 @@ export default function Dashboard() {
 
                 <hr style={{ borderColor: theme.border, margin: "16px 0" }} />
 
-                {/* PAYBILL SETTINGS */}
                 <div>
                   <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Paybill Number</label>
                   <input type="text" required value={appSettings.paybill_number} onChange={e => setAppSettings({...appSettings, paybill_number: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
@@ -309,7 +279,6 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ADMIN BOTTOM NAVIGATION */}
         <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, backgroundColor: "#0a101d", borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", padding: "12px 0", zIndex: 1000 }}>
           <div onClick={() => setAdminTab("overview")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "overview" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Home size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Overview</span></div>
           <div onClick={() => setAdminTab("approvals")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "approvals" ? theme.accent : theme.textMuted, cursor: "pointer" }}><UserCheck size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Approvals</span></div>
@@ -322,7 +291,7 @@ export default function Dashboard() {
   }
 
   // ==========================================
-  // MEMBER DASHBOARD (Simplified for this update)
+  // MEMBER DASHBOARD (Bypasses pending screen)
   // ==========================================
   return (
     <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.text, padding: "20px", fontFamily: "sans-serif" }}>
