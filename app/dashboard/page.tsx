@@ -48,7 +48,8 @@ export default function Dashboard() {
       const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (profileData) setProfile(profileData);
 
-      const { data: s } = await supabase.from("savings").select("total_savings").eq("user_id", user.id).single();
+      // FIXED: Using maybeSingle() so it doesn't crash if the row is missing
+      const { data: s } = await supabase.from("savings").select("total_savings").eq("user_id", user.id).maybeSingle();
       if (s) setSavings(s.total_savings);
 
       const { data: p } = await supabase.from("payments").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -89,27 +90,8 @@ export default function Dashboard() {
         
         if (payError) throw new Error(`Payment update failed: ${payError.message}`);
 
-        if (tx.transaction_type === 'income' || !tx.transaction_type) {
-          const amountToAdd = Number(tx.amount) || 0;
-          
-          const { data: currentS, error: fetchError } = await supabase.from("savings").select("total_savings").eq("user_id", tx.user_id).single();
-          
-          if (fetchError && fetchError.code !== 'PGRST116') {
-            throw new Error(`Fetch savings failed: ${fetchError.message}`);
-          }
-
-          if (currentS) {
-            const newTotal = Number(currentS.total_savings || 0) + amountToAdd;
-            const { error: savError } = await supabase.from("savings").update({ total_savings: newTotal }).eq("user_id", tx.user_id);
-            if (savError) throw new Error(`Savings update failed: ${savError.message}`);
-          } else {
-            const { error: insError } = await supabase.from("savings").insert({ user_id: tx.user_id, total_savings: amountToAdd });
-            if (insError) throw new Error(`Savings insert failed: ${insError.message}`);
-          }
-        }
-
         await logAction("VERIFIED_PAYMENT", tx.id, { amount: tx.amount }); 
-        alert("Success! Payment Approved and Added to Wallet.");
+        alert("Success! Payment Approved. The database trigger will update the wallet.");
       } else {
         const { error: rejError } = await supabase.from("payments").update({ 
           status: "rejected", 
@@ -138,12 +120,6 @@ export default function Dashboard() {
       });
       if (payError) throw payError;
 
-      const { data: currentS } = await supabase.from("savings").select("total_savings").eq("user_id", manualPayment.user_id).single();
-      if (currentS) {
-         await supabase.from("savings").update({ total_savings: currentS.total_savings + parseFloat(manualPayment.amount) }).eq("user_id", manualPayment.user_id);
-      } else {
-         await supabase.from("savings").insert({ user_id: manualPayment.user_id, total_savings: parseFloat(manualPayment.amount) });
-      }
       await logAction("MANUAL_PAYMENT", manualPayment.user_id, { amount: manualPayment.amount });
       alert("Payment recorded!"); setManualPayment({ user_id: "", amount: "", category: "Membership Fees", mpesa_code: "", notes: "" }); fetchDashboardData();
     } catch (err: any) { alert("Error: " + err.message); }
