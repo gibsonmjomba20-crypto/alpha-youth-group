@@ -2,10 +2,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle, ArrowLeft, Send, Share2, Palette, CreditCard, BadgeCheck, Zap, Gift, Smartphone, Landmark, GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, AlertCircle } from "lucide-react";
+import { Bell, Home, Wallet, TrendingUp, Briefcase, ArrowRightLeft, User, ShieldCheck, Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, Target, Megaphone, Link as LinkIcon, Lock, Settings, Phone, Save, CheckCircle2, Mail, Clock, MapPin, Users, Folder, BookOpen, HelpCircle, ArrowLeft, Send, Share2, Palette, CreditCard, BadgeCheck, Zap, Gift, Smartphone, Landmark, GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, Search } from "lucide-react";
 
 const THEMES = {
-  navy: { bg: "#0B1120", card: "#131C2E", border: "rgba(255, 255, 255, 0.08)", accent: "#FBBF24", text: "#F8FAFC", textMuted: "#94A3B8", purple: "#9333EA", blue: "#3B82F6", green: "#10B981", red: "#EF4444" }
+  navy: { bg: "#0B1120", card: "#131C2E", border: "rgba(255, 255, 255, 0.08)", accent: "#FBBF24", text: "#F8FAFC", textMuted: "#94A3B8", purple: "#9333EA", blue: "#3B82F6", green: "#10B981", red: "#EF4444" },
+  purple: { bg: "#0F0A1A", card: "rgba(45, 27, 78, 0.6)", border: "rgba(217, 70, 239, 0.2)", accent: "#D946EF", text: "#F8FAFC", textMuted: "#C4B5FD", purple: "#D946EF", blue: "#3B82F6", green: "#10B981", red: "#EF4444" },
+  emerald: { bg: "#021A14", card: "rgba(6, 78, 59, 0.5)", border: "rgba(16, 185, 129, 0.2)", accent: "#10B981", text: "#F8FAFC", textMuted: "#6EE7B7", purple: "#10B981", blue: "#3B82F6", green: "#10B981", red: "#EF4444" }
 };
 
 export default function Dashboard() {
@@ -21,18 +23,22 @@ export default function Dashboard() {
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]); 
-  const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "" });
+  const [searchQuery, setSearchQuery] = useState("");
   
+  // SETTINGS & TEMPLATES
+  const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
+  const [settingsMsg, setSettingsMsg] = useState("");
+  const [themeName, setThemeName] = useState<keyof typeof THEMES>("navy");
+  
+  const theme = THEMES[themeName];
+
   // FORMS
   const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "" });
-  const [settingsMsg, setSettingsMsg] = useState("");
-  const [replyMsg, setReplyMsg] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home"); 
   const [adminTab, setAdminTab] = useState("overview"); 
   
-  const theme = THEMES.navy;
   const router = useRouter();
 
   const fetchDashboardData = async () => {
@@ -57,6 +63,13 @@ export default function Dashboard() {
     const { data: ev } = await supabase.from("events").select("*").order("event_date", { ascending: true });
     if (ev) setEvents(ev);
 
+    // FETCH APP SETTINGS (Templates & Themes)
+    const { data: settingsData } = await supabase.from("app_settings").select("*").single();
+    if (settingsData) {
+      setAppSettings(settingsData);
+      setThemeName((settingsData.default_theme as keyof typeof THEMES) || "navy");
+    }
+
     if (profileData && profileData.role !== 'member') {
       const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (users) setAllUsers(users);
@@ -69,9 +82,6 @@ export default function Dashboard() {
 
       const { data: allS } = await supabase.from("savings").select("total_savings");
       if (allS) setTotalGroupSavings(allS.reduce((acc, curr) => acc + curr.total_savings, 0));
-
-      const { data: settingsData } = await supabase.from("app_settings").select("*").single();
-      if (settingsData) setAppSettings(settingsData);
     }
 
     setLoading(false);
@@ -116,14 +126,16 @@ export default function Dashboard() {
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault(); setSettingsMsg("Saving...");
-    await supabase.from("app_settings").update({ paybill_number: appSettings.paybill_number, paybill_account: appSettings.paybill_account }).eq("id", 1);
-    setSettingsMsg("Settings Saved!"); setTimeout(() => setSettingsMsg(""), 3000);
-  };
-
-  const handleAdminReply = async (id: string) => {
-    if (!replyMsg) return;
-    await supabase.from("support_tickets").update({ admin_reply: replyMsg, status: "closed" }).eq("id", id);
-    alert("Reply sent!"); setReplyMsg(""); fetchDashboardData();
+    await supabase.from("app_settings").update({ 
+      paybill_number: appSettings.paybill_number, 
+      paybill_account: appSettings.paybill_account,
+      app_name: appSettings.app_name,
+      app_slogan: appSettings.app_slogan,
+      default_theme: themeName
+    }).eq("id", 1);
+    
+    setSettingsMsg("App Settings Saved!"); 
+    setTimeout(() => setSettingsMsg(""), 3000);
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
@@ -144,24 +156,23 @@ export default function Dashboard() {
   }
 
   // ==========================================
-  // SUPER ADMIN / EXECUTIVE PORTAL (Matches Screenshot)
+  // SUPER ADMIN / EXECUTIVE PORTAL
   // ==========================================
   if (profile.role !== 'member') {
     return (
-      <div style={{ backgroundColor: "#050810", color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", paddingBottom: "80px" }}>
+      <div style={{ backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", paddingBottom: "80px", transition: "background-color 0.3s" }}>
         
         {/* HEADER */}
-        <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: "1px solid rgba(147, 51, 234, 0.3)", borderBottomLeftRadius: "24px", borderBottomRightRadius: "24px", position: "relative", overflow: "hidden" }}>
-           <div style={{ position: "absolute", top: 0, right: 0, width: "150px", height: "150px", background: "radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%)" }}></div>
-           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+        <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: `1px solid ${theme.purple}`, borderBottomLeftRadius: "24px", borderBottomRightRadius: "24px" }}>
+           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
              <div>
                <h1 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>Admin Dashboard</h1>
-               <p style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>Welcome back, Administrator</p>
-               <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Manage members, approvals and keep the organization running smoothly.</p>
+               <p style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>Welcome back, {profile.full_name.split(' ')[0]}</p>
+               <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>{appSettings.app_slogan}</p>
              </div>
              <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "rgba(16, 185, 129, 0.1)", padding: "6px 12px", borderRadius: "20px", border: "1px solid #10B981" }}>
                <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#10B981" }}></div>
-               <span style={{ fontSize: "10px", fontWeight: "bold", color: "#10B981" }}>System status: Online</span>
+               <span style={{ fontSize: "10px", fontWeight: "bold", color: "#10B981" }}>Online</span>
              </div>
            </div>
         </div>
@@ -171,130 +182,19 @@ export default function Dashboard() {
           {/* OVERVIEW TAB */}
           {adminTab === "overview" && (
             <div>
-              {/* 6 STAT CARDS */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-                
-                {/* Total Members */}
-                <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#9333EA", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><Users size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Total Members</p>
-                  <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>{allUsers.length}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Registered members</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
-
-                {/* Pending Approvals */}
-                <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#FBBF24", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><FileText size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Pending Approvals</p>
-                  <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>{allUsers.filter(u => u.membership_status === 'pending').length}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Applications to review</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
-
-                {/* Verified Savings */}
-                <div style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(16, 185, 129, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><Wallet size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Verified Savings</p>
-                  <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>KES {totalGroupSavings.toLocaleString()}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Total verified savings</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
-
-                {/* Pending Payments */}
-                <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(239, 68, 68, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><CreditCard size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Pending Payments</p>
-                  <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>{allPayments.length}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Awaiting verification</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
-
-                {/* Active Loans */}
-                <div style={{ backgroundColor: "rgba(59, 130, 246, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(59, 130, 246, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#3B82F6", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><HandCoins size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Active Loans</p>
-                  <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>{allLoans.filter(l => l.status === 'approved').length}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Currently disbursed</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
-
-                {/* Upcoming Events */}
-                <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)", position: "relative" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#9333EA", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><Calendar size={20} color="#fff" /></div>
-                  <p style={{ fontSize: "12px", color: "#d1d5db" }}>Upcoming Events</p>
-                  <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff", margin: "4px 0" }}>{events.length}</h3>
-                  <p style={{ fontSize: "10px", color: "#9ca3af" }}>Next 7 days</p>
-                  <ChevronRight size={16} color="#9ca3af" style={{ position: "absolute", bottom: "16px", right: "16px" }} />
-                </div>
+                <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}><Users size={20} color="#9333EA" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Total Members</p><h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>{allUsers.length}</h3></div>
+                <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}><FileText size={20} color="#FBBF24" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Approvals</p><h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>{allUsers.filter(u => u.membership_status === 'pending').length}</h3></div>
+                <div style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(16, 185, 129, 0.3)" }}><Wallet size={20} color="#10B981" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Verified Savings</p><h3 style={{ fontSize: "20px", fontWeight: "800", color: "#fff" }}>KES {totalGroupSavings.toLocaleString()}</h3></div>
+                <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "16px", borderRadius: "16px", border: "1px solid rgba(239, 68, 68, 0.3)" }}><CreditCard size={20} color="#EF4444" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Payments</p><h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>{allPayments.length}</h3></div>
               </div>
 
               {/* QUICK ACTIONS */}
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "24px" }}>
-                
-                {/* Review Applications */}
-                <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: "#131C2E", padding: "16px 10px", borderRadius: "16px", border: "1px solid #FBBF24", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><UserCheck size={20} color="#FBBF24" /></div>
-                  <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Review Applications</p>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "4px" }}>Check membership</p>
-                </div>
-
-                {/* Verify M-Pesa */}
-                <div onClick={() => setAdminTab("finance")} style={{ backgroundColor: "#131C2E", padding: "16px 10px", borderRadius: "16px", border: "1px solid #9333EA", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Smartphone size={20} color="#9333EA" /></div>
-                  <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Verify M-Pesa</p>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "4px" }}>Review payments</p>
-                </div>
-
-                {/* Add Announcement */}
-                <div onClick={() => setAdminTab("broadcast")} style={{ backgroundColor: "#131C2E", padding: "16px 10px", borderRadius: "16px", border: "1px solid #3B82F6", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Megaphone size={20} color="#3B82F6" /></div>
-                  <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Add Announcement</p>
-                  <p style={{ fontSize: "10px", color: "#9ca3af", marginTop: "4px" }}>Share important updates</p>
-                </div>
-              </div>
-
-              {/* APPROVAL QUEUE */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}><FileText size={18} color={theme.accent}/> Approval Queue</h3>
-                <span style={{ fontSize: "12px", color: theme.accent }}>View All</span>
-              </div>
-              
-              <div style={{ backgroundColor: "#131C2E", borderRadius: "16px", padding: "16px", marginBottom: "24px" }}>
-                {allPayments.length === 0 ? <p style={{ color: "#9ca3af", fontSize: "12px" }}>No pending approvals.</p> : allPayments.slice(0, 3).map(p => (
-                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "12px 0" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}><User size={18} color="#9333EA" /></div>
-                      <div>
-                        <p style={{ fontSize: "13px", fontWeight: "bold" }}>{p.profiles?.full_name || "New Member"}</p>
-                        <p style={{ fontSize: "11px", color: "#9ca3af" }}>M-Pesa: {p.mpesa_code}</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setAdminTab("approvals")} style={{ padding: "6px 12px", backgroundColor: "rgba(147, 51, 234, 0.1)", border: "1px solid #9333EA", color: "#9333EA", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>Review</button>
-                  </div>
-                ))}
-              </div>
-
-              {/* RECENT ACTIVITY */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}><Clock size={18} color={theme.accent}/> Recent Activity</h3>
-                <span style={{ fontSize: "12px", color: theme.accent }}>View All</span>
-              </div>
-              
-              <div style={{ backgroundColor: "#131C2E", borderRadius: "16px", padding: "16px" }}>
-                {allUsers.slice(0, 3).map(u => (
-                   <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "12px 0" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={18} color="#10B981" /></div>
-                      <div>
-                        <p style={{ fontSize: "13px", fontWeight: "bold" }}>New member registered</p>
-                        <p style={{ fontSize: "11px", color: "#9ca3af" }}>{u.full_name}</p>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: "10px", padding: "4px 8px", backgroundColor: "rgba(251, 191, 36, 0.1)", color: "#FBBF24", borderRadius: "4px", fontWeight: "bold" }}>Pending</span>
-                  </div>
-                ))}
+                <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #FBBF24", cursor: "pointer", textAlign: "center" }}><UserCheck size={20} color="#FBBF24" style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Review Apps</p></div>
+                <div onClick={() => setAdminTab("finance")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #9333EA", cursor: "pointer", textAlign: "center" }}><Smartphone size={20} color="#9333EA" style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Verify M-Pesa</p></div>
+                <div onClick={() => setAdminTab("broadcast")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #3B82F6", cursor: "pointer", textAlign: "center" }}><Megaphone size={20} color="#3B82F6" style={{ margin: "0 auto 8px auto" }}/><p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff" }}>Announce</p></div>
               </div>
             </div>
           )}
@@ -325,18 +225,24 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* MEMBERS TAB */}
+          {/* MEMBERS TAB (SEE PEOPLE) */}
           {adminTab === "members" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `2px solid ${theme.red}` }}>
-              <h3 style={{ marginBottom: "16px", color: theme.red }}>Member Management</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h3 style={{ color: theme.red }}>Member Directory</h3>
+                <div style={{ position: "relative" }}>
+                  <Search size={16} color={theme.textMuted} style={{ position: "absolute", left: "10px", top: "10px" }} />
+                  <input type="text" placeholder="Search members..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ padding: "8px 10px 8px 34px", borderRadius: "8px", border: `1px solid ${theme.border}`, backgroundColor: "rgba(0,0,0,0.3)", color: "white", outline: "none" }} />
+                </div>
+              </div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", textAlign: "left", fontSize: "14px", borderCollapse: "collapse" }}>
-                  <thead><tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted }}><th style={{ padding: "12px 8px" }}>Name</th><th>Code</th><th>Role</th><th>Actions</th></tr></thead>
+                  <thead><tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted }}><th style={{ padding: "12px 8px" }}>Name</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {allUsers.map(u => (
+                    {allUsers.filter(u => u.full_name.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
                       <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
                         <td style={{ padding: "12px 8px", fontWeight: "bold" }}>{u.full_name}</td>
-                        <td style={{ color: theme.accent, fontFamily: "monospace" }}>{u.member_code || "PENDING"}</td>
+                        <td style={{ color: theme.textMuted }}>{u.phone || "N/A"}</td>
                         <td>
                           <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} style={{ padding: "6px", borderRadius: "4px", backgroundColor: "rgba(0,0,0,0.5)", color: "white", border: `1px solid ${theme.border}` }}>
                             <option value="member">Member</option><option value="chairman">Chairman</option><option value="treasurer">Treasurer</option><option value="secretary">Secretary</option><option value="admin">Admin</option>
@@ -355,29 +261,48 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* BROADCAST TAB */}
-          {adminTab === "broadcast" && (
-            <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-              <h3 style={{ marginBottom: "16px", color: theme.accent }}>Send Announcement</h3>
-              <form onSubmit={handlePostAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "500px" }}>
-                <input type="text" placeholder="Title" required value={newAnnouncement.title} onChange={e => setNewAnnouncement({...newAnnouncement, title: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-                <textarea placeholder="Message..." required value={newAnnouncement.content} onChange={e => setNewAnnouncement({...newAnnouncement, content: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white", height: "100px" }} />
-                <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>BROADCAST MESSAGE</button>
-              </form>
-            </div>
-          )}
-
-          {/* SETTINGS TAB */}
+          {/* SETTINGS TAB (TEMPLATES & THEMES) */}
           {adminTab === "settings" && (
             <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-              <h3 style={{ marginBottom: "16px", color: theme.accent }}>Paybill Settings</h3>
+              <h3 style={{ marginBottom: "16px", color: theme.accent }}>App Settings (Templates & Themes)</h3>
               {settingsMsg && <p style={{ color: "#10B981", marginBottom: "12px" }}>{settingsMsg}</p>}
-              <form onSubmit={handleUpdateSettings} style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "400px" }}>
-                <label style={{ fontSize: "12px", color: theme.textMuted }}>Business Paybill Number</label>
-                <input type="text" required value={appSettings.paybill_number} onChange={e => setAppSettings({...appSettings, paybill_number: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-                <label style={{ fontSize: "12px", color: theme.textMuted }}>Account Number Instruction</label>
-                <input type="text" required value={appSettings.paybill_account} onChange={e => setAppSettings({...appSettings, paybill_account: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
-                <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SAVE SETTINGS</button>
+              
+              <form onSubmit={handleUpdateSettings} style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "500px" }}>
+                
+                {/* TEMPLATES */}
+                <div>
+                  <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>App Name (Template)</label>
+                  <input type="text" required value={appSettings.app_name} onChange={e => setAppSettings({...appSettings, app_name: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Slogan (Template)</label>
+                  <input type="text" required value={appSettings.app_slogan} onChange={e => setAppSettings({...appSettings, app_slogan: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                </div>
+
+                {/* THEME BACKGROUND */}
+                <div style={{ marginTop: "12px" }}>
+                  <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Background Theme</label>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                    <button type="button" onClick={() => setThemeName("navy")} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#0B1120", color: "white", border: themeName === 'navy' ? `2px solid #FBBF24` : `1px solid ${theme.border}`, cursor: "pointer", fontWeight: "bold" }}>Navy</button>
+                    <button type="button" onClick={() => setThemeName("purple")} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#0F0A1A", color: "white", border: themeName === 'purple' ? `2px solid #D946EF` : `1px solid ${theme.border}`, cursor: "pointer", fontWeight: "bold" }}>Purple</button>
+                    <button type="button" onClick={() => setThemeName("emerald")} style={{ padding: "10px", borderRadius: "8px", backgroundColor: "#021A14", color: "white", border: themeName === 'emerald' ? `2px solid #10B981` : `1px solid ${theme.border}`, cursor: "pointer", fontWeight: "bold" }}>Emerald</button>
+                  </div>
+                </div>
+
+                <hr style={{ borderColor: theme.border, margin: "16px 0" }} />
+
+                {/* PAYBILL SETTINGS */}
+                <div>
+                  <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Paybill Number</label>
+                  <input type="text" required value={appSettings.paybill_number} onChange={e => setAppSettings({...appSettings, paybill_number: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "bold" }}>Account Number Instruction</label>
+                  <input type="text" required value={appSettings.paybill_account} onChange={e => setAppSettings({...appSettings, paybill_account: e.target.value})} style={{ width: "100%", padding: "12px", marginTop: "4px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                </div>
+
+                <button type="submit" style={{ padding: "14px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", marginTop: "12px" }}>SAVE SETTINGS</button>
               </form>
             </div>
           )}
@@ -390,7 +315,7 @@ export default function Dashboard() {
           <div onClick={() => setAdminTab("approvals")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "approvals" ? theme.accent : theme.textMuted, cursor: "pointer" }}><UserCheck size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Approvals</span></div>
           <div onClick={() => setAdminTab("finance")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "finance" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Banknote size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Finance</span></div>
           <div onClick={() => setAdminTab("members")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "members" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Users size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Members</span></div>
-          <div onClick={() => setAdminTab("settings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "settings" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Menu size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>More</span></div>
+          <div onClick={() => setAdminTab("settings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: adminTab === "settings" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Settings size={22} /><span style={{ fontSize: "10px", fontWeight: "600" }}>Settings</span></div>
         </nav>
       </div>
     );
