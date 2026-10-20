@@ -232,8 +232,6 @@ export default function Dashboard() {
             </div>
             
             <div style={{ color: theme.text }}>
-              
-              {/* 30-DAY CHALLENGE */}
               {activeFeature.id === 18 && (
                 <div>
                   <p style={{ fontSize: "12px", marginBottom: "10px", color: theme.textMuted }}>Tap a day to mark it complete.</p>
@@ -246,8 +244,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-
-              {/* 52-WEEK CHALLENGE */}
               {activeFeature.id === 19 && (
                 <div>
                   <p style={{ fontSize: "12px", marginBottom: "10px", color: theme.textMuted }}>Tap a week to mark it complete.</p>
@@ -260,8 +256,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-
-              {/* MEMBER ID */}
               {activeFeature.id === 14 && (
                 <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", border: `1px solid ${theme.accent}`, borderRadius: "12px", padding: "20px", textAlign: "center" }}>
                   <h2 style={{ color: theme.accent, fontSize: "18px", fontWeight: "bold" }}>ALPHA YOUTH GROUP</h2>
@@ -271,8 +265,6 @@ export default function Dashboard() {
                   <p style={{ fontSize: "10px", color: theme.accent, marginTop: "15px" }}>VALID MEMBER</p>
                 </div>
               )}
-
-              {/* HABIT TRACKER */}
               {activeFeature.id === 23 && (
                 <div>
                   <div style={{ display: "flex", gap: "8px", marginBottom: "15px" }}>
@@ -290,8 +282,6 @@ export default function Dashboard() {
                   {habits.length === 0 && <p style={{ fontSize: "12px", color: theme.textMuted, textAlign: "center" }}>No habits added yet.</p>}
                 </div>
               )}
-
-              {/* CV BUILDER */}
               {activeFeature.id === 20 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   <input type="text" placeholder="Full Name" value={cvData.name} onChange={e => setCvData({...cvData, name: e.target.value})} style={{ padding: "10px", borderRadius: "6px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }} />
@@ -310,8 +300,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-
-              {/* DAILY AFFIRMATIONS */}
               {activeFeature.id === 24 && (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <Sparkles size={40} color={theme.accent} style={{ margin: "0 auto 15px" }} />
@@ -319,8 +307,6 @@ export default function Dashboard() {
                   <button onClick={() => setAffirmationIndex((prev) => (prev + 1) % affirmations.length)} style={{ padding: "10px 20px", backgroundColor: theme.purple, color: "white", borderRadius: "8px", fontWeight: "bold", border: "none" }}>Next Affirmation</button>
                 </div>
               )}
-
-              {/* EVENT COUNTDOWN */}
               {activeFeature.id === 30 && (
                 <div style={{ textAlign: "center" }}>
                   <CalendarDays size={40} color={theme.red} style={{ margin: "0 auto 15px" }} />
@@ -329,8 +315,6 @@ export default function Dashboard() {
                   {timeLeft && <h3 style={{ marginTop: "20px", color: theme.accent, fontSize: "20px", fontWeight: "bold" }}>{timeLeft}</h3>}
                 </div>
               )}
-
-              {/* FINANCIAL QUIZ */}
               {activeFeature.id === 7 && (
                 <div>
                   <p style={{ fontSize: "14px", marginBottom: "15px" }}>What is the best way to build wealth?</p>
@@ -346,8 +330,6 @@ export default function Dashboard() {
                   )}
                 </div>
               )}
-
-              {/* DEFAULT FEATURES (Text based) */}
               {![7, 14, 18, 19, 20, 23, 24, 30].includes(activeFeature.id) && (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ width: "60px", height: "60px", borderRadius: "50%", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 15px" }}>
@@ -360,7 +342,6 @@ export default function Dashboard() {
                   <button onClick={() => setActiveFeature(null)} style={{ marginTop: "20px", padding: "10px 20px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", width: "100%" }}>Got it</button>
                 </div>
               )}
-
             </div>
           </div>
         </div>
@@ -430,6 +411,28 @@ export default function Dashboard() {
                   <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.whatsapp, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(37, 211, 102, 0.4)` }}><MessageCircle size={24} color="#fff" /></div>
                   <span style={{ fontSize: "10px", fontWeight: "600" }}>WhatsApp</span>
                 </a>
+              </div>
+
+              {/* ADDED: RECENT ANNOUNCEMENTS */}
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Megaphone size={18} color={theme.accent}/> Announcements</h3>
+                {announcements.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No announcements yet.</p> : announcements.slice(0,2).map(n => (
+                  <div key={n.id} style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: `1px solid ${theme.border}` }}>
+                    <p style={{ fontSize: "14px", fontWeight: "bold" }}>{n.title}</p>
+                    <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{n.content}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* ADDED: UPCOMING EVENTS */}
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><CalendarDays size={18} color={theme.blue}/> Upcoming Events</h3>
+                {events.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No upcoming events.</p> : events.slice(0,2).map(e => (
+                  <div key={e.id} style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: `1px solid ${theme.border}` }}>
+                    <p style={{ fontSize: "14px", fontWeight: "bold" }}>{e.title}</p>
+                    <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{e.event_date} | {e.location}</p>
+                  </div>
+                ))}
               </div>
            </div>
         )}
@@ -520,7 +523,6 @@ export default function Dashboard() {
           <div>
             <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "16px" }}>More Services</h2>
             
-            {/* Search & Filters */}
             <div style={{ position: "relative", marginBottom: "16px" }}>
               <Search size={18} color={theme.textMuted} style={{ position: "absolute", left: "12px", top: "12px" }} />
               <input type="text" placeholder="Search tools..." value={featureSearch} onChange={e => setFeatureSearch(e.target.value)} style={{ width: "100%", padding: "12px 12px 12px 40px", borderRadius: "8px", border: `1px solid ${theme.border}`, backgroundColor: theme.card, color: "white", outline: "none" }} />
@@ -535,7 +537,6 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Features Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               {filteredFeatures.map((item) => (
                 <div key={item.id} onClick={() => setActiveFeature(item)} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", cursor: "pointer", textAlign: "center" }}>
