@@ -10,7 +10,7 @@ import {
   Share2, Palette, CreditCard, BadgeCheck, Zap, Gift, Smartphone, Landmark, 
   GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, 
   Search, MessagesSquare, X, MessageSquare, ExternalLink, LogOut, Presentation, 
-  HeartHandshake, LifeBuoy, AlertCircle, LayoutDashboard, MoreHorizontal
+  HeartHandshake, LifeBuoy, AlertCircle, LayoutDashboard, MoreHorizontal, AlertTriangle
 } from "lucide-react";
 
 const THEMES = {
@@ -25,18 +25,14 @@ export default function Dashboard() {
   const [savingsGoal, setSavingsGoal] = useState<number>(10000);
   const [loans, setLoans] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [meetings, setMeetings] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [newMembers, setNewMembers] = useState<any[]>([]);
   const [myCareRequests, setMyCareRequests] = useState<any[]>([]);
-  const [myPayments, setMyPayments] = useState<any[]>([]); // For Savings history
+  const [myPayments, setMyPayments] = useState<any[]>([]); 
   
   // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allUsers, setAllUsers] = useState<any[]>([]); 
-  const [allLoans, setAllLoans] = useState<any[]>([]);
   const [allCareRequests, setAllCareRequests] = useState<any[]>([]);
-  const [totalGroupSavings, setTotalGroupSavings] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [financeFilter, setFinanceFilter] = useState("pending");
   const [appSettings, setAppSettings] = useState<any>({ paybill_number: "0704785116", paybill_account: "ALPHA", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", whatsapp_link: "" });
@@ -94,14 +90,8 @@ export default function Dashboard() {
       const { data: ann } = await supabase.from("announcements").select("*").order("created_at", { ascending: false }).limit(5);
       if (ann) setAnnouncements(ann);
 
-      const { data: meet } = await supabase.from("meetings").select("*").order("meeting_date", { ascending: true }).limit(5);
-      if (meet) setMeetings(meet);
-
       const { data: ev } = await supabase.from("events").select("*").order("event_date", { ascending: true }).limit(5);
       if (ev) setEvents(ev);
-
-      const { data: newM } = await supabase.from("profiles").select("id, full_name, member_code, created_at").order("created_at", { ascending: false }).limit(3);
-      if (newM) setNewMembers(newM);
 
       const { data: settingsData } = await supabase.from("app_settings").select("*").single();
       if (settingsData) setAppSettings(settingsData);
@@ -114,14 +104,8 @@ export default function Dashboard() {
         const { data: allP } = await supabase.from("payments").select(`*, profiles:user_id (full_name, phone)`).order("created_at", { ascending: false });
         if (allP) setAllPayments(allP);
         
-        const { data: allL } = await supabase.from("loans").select("*").eq("status", "approved");
-        if (allL) setAllLoans(allL);
-
         const { data: pendingCare } = await supabase.from("alpha_care").select(`*, profiles:user_id (full_name, phone)`).eq("status", "pending");
         if (pendingCare) setAllCareRequests(pendingCare);
-
-        const { data: allS } = await supabase.from("savings").select("total_savings");
-        if (allS) setTotalGroupSavings(allS.reduce((acc, curr) => acc + curr.total_savings, 0));
       }
     } catch (err: any) {
       console.error(err);
@@ -145,7 +129,9 @@ export default function Dashboard() {
     e.preventDefault();
     if (!careRequest.agreed) return alert("You must agree to the terms.");
     await supabase.from("alpha_care").insert({ user_id: profile.id, reason: careRequest.reason, is_emergency: careRequest.isEmergency, status: "pending" });
-    alert("✅ Alpha Care application submitted to Admin."); setCareRequest({ reason: "", isEmergency: false, agreed: false }); fetchDashboardData();
+    alert(`✅ ${careRequest.isEmergency ? 'EMERGENCY ' : ''}Request submitted to Admin.`); 
+    setCareRequest({ reason: "", isEmergency: false, agreed: false }); 
+    fetchDashboardData();
   };
 
   // ADMIN ACTIONS
@@ -189,12 +175,6 @@ export default function Dashboard() {
     alert("Broadcast sent successfully!");
     setBroadcastTitle(""); setBroadcastContent("");
     fetchDashboardData();
-  };
-
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    if (!window.confirm(`Change role to ${newRole.toUpperCase()}?`)) return;
-    await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
-    alert("Role updated!"); fetchDashboardData();
   };
 
   const handleStatusChange = async (userId: string, currentStatus: string) => {
@@ -284,7 +264,6 @@ export default function Dashboard() {
           {/* HOME TAB */}
           {activeTab === "home" && (
             <div>
-              {/* Welcome Banner */}
               <div style={{ position: "relative", background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", borderRadius: "16px", padding: "20px", marginBottom: "24px", border: `1px solid ${theme.purple}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold", border: `2px solid ${theme.accent}` }}>{safeInitial}</div>
@@ -296,27 +275,16 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Balances Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
                 <div onClick={() => setActiveTab("savings")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
                   <Wallet size={20} color={theme.accent} />
-                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Savings</p>
+                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Alpha Wallet</p>
                   <h3 style={{ fontSize: "18px", fontWeight: "bold" }}>KES {savings.toLocaleString()}</h3>
                 </div>
-                <div onClick={() => setActiveTab("more")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
-                  <TrendingUp size={20} color={theme.green} />
-                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Shares</p>
-                  <h3 style={{ fontSize: "18px", fontWeight: "bold" }}>0</h3>
-                </div>
-                <div onClick={() => setActiveTab("more")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
-                  <HandCoins size={20} color={theme.purple} />
-                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Loan Status</p>
-                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: theme.textMuted }}>No Active Loan</h3>
-                </div>
-                <div onClick={() => setActiveTab("more")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
-                  <Clock size={20} color={theme.red} />
-                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Pending Tasks</p>
-                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: theme.textMuted }}>{myPayments.filter(p => p.status === 'pending').length} Payment</h3>
+                <div onClick={() => setActiveTab("alphacare")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
+                  <HeartHandshake size={20} color="#F43F5E" />
+                  <p style={{ fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>Alpha Care</p>
+                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: theme.textMuted }}>{myCareRequests.filter(c => c.status === 'pending').length} Pending</h3>
                 </div>
               </div>
 
@@ -326,12 +294,7 @@ export default function Dashboard() {
                 
                 <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
                   <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(147, 51, 234, 0.4)` }}><Wallet size={24} color="#fff" /></div>
-                  <span style={{ fontSize: "10px", fontWeight: "600" }}>Savings</span>
-                </div>
-
-                <div onClick={() => setActiveTab("more")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
-                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.green, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(16, 185, 129, 0.4)` }}><HandCoins size={24} color="#fff" /></div>
-                  <span style={{ fontSize: "10px", fontWeight: "600" }}>Loans</span>
+                  <span style={{ fontSize: "10px", fontWeight: "600" }}>Wallet</span>
                 </div>
 
                 <div onClick={() => setActiveTab("alphacare")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
@@ -348,17 +311,6 @@ export default function Dashboard() {
                   <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.whatsapp, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(37, 211, 102, 0.4)` }}><MessageCircle size={24} color="#fff" /></div>
                   <span style={{ fontSize: "10px", fontWeight: "600" }}>WhatsApp</span>
                 </a>
-              </div>
-
-              {/* Announcements Feed */}
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Megaphone size={18} color={theme.accent}/> Recent Announcements</h3>
-                {announcements.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No recent announcements.</p> : announcements.slice(0,2).map(n => (
-                  <div key={n.id} style={{ marginBottom: "12px", paddingBottom: "12px", borderBottom: `1px solid ${theme.border}` }}>
-                    <p style={{ fontSize: "14px", fontWeight: "bold" }}>{n.title}</p>
-                    <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{n.content}</p>
-                  </div>
-                ))}
               </div>
             </div>
           )}
@@ -385,23 +337,36 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* EMERGENCY CALL BUTTON */}
+              <a href="tel:0704785116" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%", padding: "16px", backgroundColor: "rgba(239, 68, 68, 0.15)", border: `1px solid ${theme.red}`, borderRadius: "12px", color: theme.red, textDecoration: "none", fontWeight: "bold", marginBottom: "24px" }}>
+                <Phone size={20} /> Call Emergency Support
+              </a>
+
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px" }}>Apply for Support</h3>
                 <form onSubmit={handleApplyCare} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <textarea placeholder="Reason for application..." required value={careRequest.reason} onChange={e => setCareRequest({...careRequest, reason: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white", height: "80px" }} />
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }}>
-                    <input type="checkbox" checked={careRequest.isEmergency} onChange={e => setCareRequest({...careRequest, isEmergency: e.target.checked})} /> Mark as Emergency
+                  
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: careRequest.isEmergency ? theme.red : "white" }}>
+                    <input type="checkbox" checked={careRequest.isEmergency} onChange={e => setCareRequest({...careRequest, isEmergency: e.target.checked})} style={{ accentColor: theme.red }} /> 
+                    Mark as Emergency
                   </label>
+                  
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: theme.accent }}>
                     <input type="checkbox" required checked={careRequest.agreed} onChange={e => setCareRequest({...careRequest, agreed: e.target.checked})} /> I agree to the terms.
                   </label>
-                  <button type="submit" style={{ padding: "12px", backgroundColor: "#F43F5E", color: "#fff", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT REQUEST</button>
+                  
+                  <button type="submit" style={{ padding: "12px", backgroundColor: careRequest.isEmergency ? theme.red : "#F43F5E", color: "#fff", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "0.3s" }}>
+                    {careRequest.isEmergency && <AlertTriangle size={18} />} 
+                    {careRequest.isEmergency ? "SUBMIT EMERGENCY REQUEST" : "SUBMIT REQUEST"}
+                  </button>
                 </form>
               </div>
 
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px" }}>My Support Requests</h3>
               {myCareRequests.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No support requests yet.</p> : myCareRequests.map(r => (
-                <div key={r.id} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${theme.border}`, marginBottom: "8px" }}>
+                <div key={r.id} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "12px", border: `1px solid ${r.is_emergency ? theme.red : theme.border}`, marginBottom: "8px" }}>
+                  {r.is_emergency && <p style={{ fontSize: "10px", fontWeight: "bold", color: theme.red, marginBottom: "4px" }}>🚨 EMERGENCY</p>}
                   <p style={{ fontSize: "14px", fontWeight: "bold" }}>{r.reason}</p>
                   <p style={{ fontSize: "12px", fontWeight: "bold", marginTop: "8px", color: r.status === 'approved' ? theme.green : r.status === 'rejected' ? theme.red : theme.accent }}>Status: {r.status.toUpperCase()}</p>
                 </div>
@@ -409,27 +374,34 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* SAVINGS TAB */}
+          {/* SAVINGS / ALPHA WALLET TAB */}
           {activeTab === "savings" && (
             <div>
               <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
-              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}><Wallet color={theme.accent}/> My Savings</h2>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}><Wallet color={theme.accent}/> Alpha Wallet</h2>
               
+              {/* PAYMENT DETAILS CARD */}
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.purple}`, marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: "bold", color: theme.purple, marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}><Landmark size={16}/> Your M-Pesa Details</h3>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: `1px solid ${theme.border}`, paddingBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", color: theme.textMuted }}>Paybill Number:</span>
+                  <span style={{ fontSize: "14px", fontWeight: "bold" }}>{appSettings.paybill_number}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: `1px solid ${theme.border}`, paddingBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", color: theme.textMuted }}>Account (Member ID):</span>
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: theme.accent }}>{profile.member_code || "PENDING"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "12px", color: theme.textMuted }}>Phone Number:</span>
+                  <span style={{ fontSize: "14px", fontWeight: "bold" }}>{profile.phone || "Not Set"}</span>
+                </div>
+                <p style={{ fontSize: "10px", color: theme.textMuted, marginTop: "12px", textAlign: "center", fontStyle: "italic" }}>Use your Member ID as the Account Number when paying.</p>
+              </div>
+
               <div style={{ backgroundColor: theme.card, padding: "24px 20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center", marginBottom: "24px" }}>
                 <p style={{ color: theme.textMuted, fontSize: "14px" }}>Verified Balance</p>
                 <h3 style={{ fontSize: "36px", fontWeight: "900", color: theme.accent }}>KES {savings.toLocaleString()}</h3>
-                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%" }}><Smartphone size={18}/> Add via M-Pesa</button>
-              </div>
-
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Target size={18} color={theme.accent}/> Savings Goal</h3>
-                <div style={{ width: "100%", backgroundColor: "rgba(0,0,0,0.5)", borderRadius: "10px", height: "10px", marginBottom: "8px" }}>
-                  <div style={{ width: `${goalProgress}%`, backgroundColor: theme.green, height: "100%", borderRadius: "10px" }}></div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: theme.textMuted }}>
-                  <span>KES {savings}</span>
-                  <span>Goal: KES {savingsGoal}</span>
-                </div>
+                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%" }}><Smartphone size={18}/> Deposit via M-Pesa</button>
               </div>
 
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px" }}>Contribution History</h3>
@@ -505,7 +477,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* LOANS TAB (From More Menu) */}
+          {/* LOANS TAB */}
           {activeTab === "loans" && (
             <div>
               <button onClick={() => setActiveTab("more")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back to More</button>
@@ -517,15 +489,6 @@ export default function Dashboard() {
                   <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT APPLICATION</button>
                 </form>
               </div>
-              
-              <h3 style={{ fontSize: "16px", fontWeight: "700", marginTop: "24px", marginBottom: "12px" }}>My Loans</h3>
-              {loans.length === 0 ? <p style={{ color: theme.textMuted, fontSize: "12px" }}>No loan history.</p> : loans.map(l => (
-                <div key={l.id} style={{ backgroundColor: theme.card, padding: "12px", borderRadius: "8px", border: `1px solid ${theme.border}`, marginBottom: "8px" }}>
-                  <p style={{ fontWeight: "bold" }}>KES {l.amount}</p>
-                  <p style={{ fontSize: "12px", color: theme.textMuted }}>{l.purpose}</p>
-                  <p style={{ fontSize: "10px", fontWeight: "bold", color: l.status === 'approved' ? theme.green : theme.accent, marginTop: "4px" }}>{l.status.toUpperCase()}</p>
-                </div>
-              ))}
             </div>
           )}
 
@@ -534,7 +497,7 @@ export default function Dashboard() {
         <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, backgroundColor: theme.bg, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", padding: "10px 0", zIndex: 1000 }}>
           <div onClick={() => setActiveTab("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "home" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Home size={22} /><span style={{ fontSize: "10px" }}>Home</span></div>
           <div onClick={() => setActiveTab("alphacare")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "alphacare" ? theme.accent : theme.textMuted, cursor: "pointer" }}><HeartHandshake size={22} /><span style={{ fontSize: "10px" }}>Care</span></div>
-          <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "savings" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Wallet size={22} /><span style={{ fontSize: "10px" }}>Savings</span></div>
+          <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "savings" ? theme.accent : theme.textMuted, cursor: "pointer" }}><Wallet size={22} /><span style={{ fontSize: "10px" }}>Wallet</span></div>
           <div onClick={() => setActiveTab("events")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "events" ? theme.accent : theme.textMuted, cursor: "pointer" }}><CalendarDays size={22} /><span style={{ fontSize: "10px" }}>Events</span></div>
           <div onClick={() => setActiveTab("more")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "more" ? theme.accent : theme.textMuted, cursor: "pointer" }}><MoreHorizontal size={22} /><span style={{ fontSize: "10px" }}>More</span></div>
         </nav>
@@ -626,6 +589,7 @@ export default function Dashboard() {
               {allPayments.filter(p => p.status === financeFilter).length === 0 ? <p style={{ color: theme.textMuted }}>No {financeFilter} payments found.</p> : allPayments.filter(p => p.status === financeFilter).map(p => (
                 <div key={p.id} style={{ backgroundColor: "rgba(0,0,0,0.1)", padding: "16px", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${theme.border}` }}>
                   <p style={{ fontWeight: "bold" }}>{p.profiles?.full_name}</p>
+                  <p style={{ fontSize: "11px", color: theme.textMuted }}>Phone: {p.profiles?.phone || "N/A"}</p>
                   <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${theme.accent}` }}>
                     <p style={{ fontSize: "12px", color: theme.textMuted }}>Code: <strong style={{ color: theme.accent }}>{p.mpesa_code}</strong> | KES {p.amount}</p>
                   </div>
@@ -655,7 +619,8 @@ export default function Dashboard() {
                     <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>{u.full_name?.charAt(0) || "U"}</div>
                     <div>
                       <p style={{ fontWeight: "bold" }}>{u.full_name}</p>
-                      <p style={{ fontSize: "10px", color: theme.textMuted }}>Code: {u.member_code || "PENDING"}</p>
+                      <p style={{ fontSize: "10px", color: theme.textMuted }}>ID: {u.member_code || "PENDING"}</p>
+                      <p style={{ fontSize: "10px", color: theme.textMuted }}>Phone: {u.phone || "N/A"}</p>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -729,7 +694,7 @@ export default function Dashboard() {
                     <div style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginTop: "10px", borderLeft: `3px solid ${c.is_emergency ? theme.red : theme.blue}` }}>
                       <p style={{ fontSize: "14px", color: theme.text }}><strong>Reason:</strong> {c.reason}</p>
                       <p style={{ fontSize: "12px", marginTop: "8px", fontWeight: "bold", color: c.is_emergency ? theme.red : theme.textMuted }}>
-                        {c.is_emergency ? "🚨 EMERGENCY" : "Standard Request"}
+                        {c.is_emergency ? "🚨 EMERGENCY REQUEST" : "Standard Request"}
                       </p>
                     </div>
                     <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
