@@ -12,7 +12,7 @@ import {
   GraduationCap, CalendarDays, HandCoins, Banknote, UserX, UserCheck, BarChart3, 
   Search, MessagesSquare, X, MessageSquare, ExternalLink, LogOut, Presentation, 
   HeartHandshake, LifeBuoy, AlertCircle, LayoutDashboard, MoreHorizontal, AlertTriangle,
-  Trophy, Calculator, Book, Award, FileBadge, Sparkles, Eye, Trash2, Download, Printer, Crown, Shield, Info, Activity, FileSpreadsheet, Server
+  Trophy, Calculator, Book, Award, FileBadge, Sparkles, Eye, Trash2, Download, Printer, Crown, Shield, Info, Activity, FileSpreadsheet, Server, PlusSquare
 } from "lucide-react";
 
 const THEMES = {
@@ -33,12 +33,11 @@ export default function Dashboard() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   
   // FINANCE SPECIFIC STATE
-  const [financeSubTab, setFinanceSubTab] = useState("overview"); 
   const [financeSearch, setFinanceSearch] = useState("");
-  const [financeStatus, setFinanceStatus] = useState("all");
   
   // FORMS
   const [newExpense, setNewExpense] = useState({ amount: "", category: "Operating Expenses", notes: "" });
+  const [manualPayment, setManualPayment] = useState({ user_id: "", amount: "", category: "Membership Fees", mpesa_code: "", notes: "" });
 
   const [loading, setLoading] = useState(true);
   const [adminTab, setAdminTab] = useState("overview"); 
@@ -65,7 +64,7 @@ export default function Dashboard() {
 
       // Load Staff Data
       if (profileData && (profileData.role === 'admin' || profileData.role === 'treasurer' || profileData.role === 'chairman' || profileData.email === MASTER_ADMIN_EMAIL)) {
-        const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+        const { data: users } = await supabase.from("profiles").select("*").order("full_name", { ascending: true });
         if (users) setAllUsers(users);
         
         const { data: allP } = await supabase.from("payments").select(`*, profiles:user_id (full_name, member_code)`).order("created_at", { ascending: false });
@@ -94,15 +93,58 @@ export default function Dashboard() {
         await supabase.from("payments").update({ status: "verified", verified_by: profile.full_name, verified_at: new Date().toISOString() }).eq("id", tx.id);
         if (tx.transaction_type === 'income') {
           const { data: currentS } = await supabase.from("savings").select("total_savings").eq("user_id", tx.user_id).single();
-          if (currentS) await supabase.from("savings").update({ total_savings: currentS.total_savings + tx.amount }).eq("user_id", tx.user_id);
+          if (currentS) {
+            await supabase.from("savings").update({ total_savings: currentS.total_savings + tx.amount }).eq("user_id", tx.user_id);
+          } else {
+            await supabase.from("savings").insert({ user_id: tx.user_id, total_savings: tx.amount });
+          }
         }
-        await logAction("VERIFIED_PAYMENT", tx.id, { amount: tx.amount }); alert("Payment Verified.");
+        await logAction("VERIFIED_PAYMENT", tx.id, { amount: tx.amount }); 
+        alert("Payment Approved and Added to Savings.");
       } else {
         await supabase.from("payments").update({ status: "rejected", rejection_reason: reason, verified_by: profile.full_name }).eq("id", tx.id);
         await logAction("REJECTED_PAYMENT", tx.id, { amount: tx.amount, reason }); alert("Payment Rejected.");
       }
       fetchDashboardData();
     } catch (err: any) { alert("Error: " + err.message); }
+  };
+
+  const handleManualPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualPayment.user_id) return alert("Please select a member.");
+    
+    try {
+      // 1. Insert payment as verified
+      const { error: payError } = await supabase.from("payments").insert({
+        user_id: manualPayment.user_id,
+        amount: parseFloat(manualPayment.amount),
+        category: manualPayment.category,
+        mpesa_code: manualPayment.mpesa_code || `CASH-${Date.now()}`,
+        status: "verified",
+        transaction_type: "income",
+        verified_by: profile.full_name,
+        verified_at: new Date().toISOString(),
+        notes: manualPayment.notes
+      });
+
+      if (payError) throw payError;
+
+      // 2. Update Savings
+      const { data: currentS } = await supabase.from("savings").select("total_savings").eq("user_id", manualPayment.user_id).single();
+      if (currentS) {
+         await supabase.from("savings").update({ total_savings: currentS.total_savings + parseFloat(manualPayment.amount) }).eq("user_id", manualPayment.user_id);
+      } else {
+         await supabase.from("savings").insert({ user_id: manualPayment.user_id, total_savings: parseFloat(manualPayment.amount) });
+      }
+
+      await logAction("MANUAL_PAYMENT_ADDED", manualPayment.user_id, { amount: manualPayment.amount, category: manualPayment.category });
+      
+      alert("Payment recorded and approved successfully!");
+      setManualPayment({ user_id: "", amount: "", category: "Membership Fees", mpesa_code: "", notes: "" });
+      fetchDashboardData();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
   };
 
   const handleApproveLoan = async (loan: any, action: "approved" | "rejected") => {
@@ -117,7 +159,7 @@ export default function Dashboard() {
       user_id: profile.id, 
       amount: parseFloat(newExpense.amount), 
       mpesa_code: `EXP-${Date.now().toString().slice(-6)}`,
-      status: "verified", // Expenses logged by treasurer are immediately verified
+      status: "verified", 
       transaction_type: "expense",
       category: newExpense.category,
       verified_by: profile.full_name,
@@ -144,10 +186,9 @@ export default function Dashboard() {
   
   const isTreasurer = profile.role === 'treasurer' && profile.email !== MASTER_ADMIN_EMAIL;
   const isAdmin = profile.role === 'admin' || profile.email === MASTER_ADMIN_EMAIL;
-  const isStaff = isAdmin || isTreasurer;
 
   // ==========================================
-  // 1. TREASURER DASHBOARD (Separated)
+  // 1. TREASURER DASHBOARD
   // ==========================================
   if (isTreasurer) {
     const pendingTx = allPayments.filter(p => p.status === 'pending');
@@ -166,6 +207,7 @@ export default function Dashboard() {
           </div>
           {[
             { id: "treasury_overview", label: "Financial Overview", icon: <BarChart3 size={20} /> },
+            { id: "record_payment", label: "Record Payment", icon: <PlusSquare size={20} /> },
             { id: "verification", label: "Verify Payments", icon: <CheckCircle2 size={20} />, badge: pendingTx.length },
             { id: "register", label: "Transaction Register", icon: <FileSpreadsheet size={20} /> },
             { id: "loans", label: "Loan Approvals", icon: <HandCoins size={20} />, badge: allLoans.length },
@@ -200,6 +242,26 @@ export default function Dashboard() {
                   <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}><Wallet size={24} color={theme.purple} /><p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "8px" }}>Net Cash Balance</p><h3 style={{ fontSize: "20px", fontWeight: "800", color: theme.purple }}>KES {net.toLocaleString()}</h3></div>
                   <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}><Clock size={24} color={theme.accent} /><p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "8px" }}>Pending Verifications</p><h3 style={{ fontSize: "20px", fontWeight: "800", color: theme.accent }}>{pendingTx.length} Records</h3></div>
                 </div>
+              </div>
+            )}
+
+            {treasurerTab === "record_payment" && (
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+                <h3 style={{ marginBottom: "16px", color: theme.green, display: "flex", alignItems: "center", gap: "8px" }}><PlusSquare size={20}/> Record Direct Payment</h3>
+                <p style={{ fontSize: "12px", color: theme.textMuted, marginBottom: "16px" }}>Use this to approve a payment manually (e.g. Cash received in a meeting). This will instantly add the funds to the member's wallet.</p>
+                <form onSubmit={handleManualPayment} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <select required value={manualPayment.user_id} onChange={e => setManualPayment({...manualPayment, user_id: e.target.value})} style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }}>
+                    <option value="">Select Member...</option>
+                    {allUsers.map(u => <option key={u.id} value={u.id}>{u.full_name} ({u.member_code || "No ID"})</option>)}
+                  </select>
+                  <input type="number" placeholder="Amount (KES)" required value={manualPayment.amount} onChange={e => setManualPayment({...manualPayment, amount: e.target.value})} style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }} />
+                  <select value={manualPayment.category} onChange={e => setManualPayment({...manualPayment, category: e.target.value})} style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }}>
+                    <option>Membership Fees</option><option>Member Contributions</option><option>Savings & Shares</option><option>Loan Repayment</option><option>Alpha Care Contribution</option><option>Event Payment</option><option>Donation</option>
+                  </select>
+                  <input type="text" placeholder="M-Pesa Code (Optional)" value={manualPayment.mpesa_code} onChange={e => setManualPayment({...manualPayment, mpesa_code: e.target.value})} style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }} />
+                  <input type="text" placeholder="Notes (Optional)" value={manualPayment.notes} onChange={e => setManualPayment({...manualPayment, notes: e.target.value})} style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, color: "white" }} />
+                  <button type="submit" style={{ padding: "12px", backgroundColor: theme.green, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none" }}>Record & Approve Payment</button>
+                </form>
               </div>
             )}
 
@@ -253,10 +315,23 @@ export default function Dashboard() {
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
                 <h3 style={{ marginBottom: "16px", color: theme.blue }}>Transaction Register</h3>
                 <input type="text" placeholder="Search..." value={financeSearch} onChange={e => setFinanceSearch(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: `1px solid ${theme.border}`, backgroundColor: "rgba(0,0,0,0.3)", color: "white", marginBottom: "16px" }} />
+                
                 {allPayments.filter(p => p.profiles?.full_name?.toLowerCase().includes(financeSearch.toLowerCase())).map(p => (
                   <div key={p.id} style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "12px", marginBottom: "10px", borderLeft: `4px solid ${p.transaction_type === 'income' ? theme.green : theme.red}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}><strong>{p.profiles?.full_name || "System Expense"}</strong><span style={{ color: p.transaction_type === 'income' ? theme.green : theme.red, fontWeight: "bold" }}>{p.transaction_type === 'income' ? "+" : "-"} KES {p.amount}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: theme.textMuted }}><span>{p.category || "General"}</span><span>{p.status.toUpperCase()}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                      <strong>{p.profiles?.full_name || "System Expense"}</strong>
+                      <span style={{ color: p.transaction_type === 'income' ? theme.green : theme.red, fontWeight: "bold" }}>{p.transaction_type === 'income' ? "+" : "-"} KES {p.amount}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: theme.textMuted, marginTop: "8px" }}>
+                      <span>{p.category || "General"} | {p.status.toUpperCase()}</span>
+                      
+                      {/* INLINE APPROVE BUTTON */}
+                      {p.status === 'pending' && (
+                        <button onClick={() => handleVerifyPayment(p, "verified")} style={{ padding: "6px 12px", backgroundColor: theme.green, color: "#000", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <CheckCircle2 size={14} /> Approve
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -274,7 +349,6 @@ export default function Dashboard() {
     const pendingTx = allPayments.filter(p => p.status === 'pending');
     return (
       <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: "100vh", display: "flex" }}>
-        {/* ADMIN SIDEBAR */}
         {isMenuOpen && <div onClick={() => setIsMenuOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.7)", zIndex: 999 }} />}
         <div style={{ position: "fixed", top: 0, left: isMenuOpen ? 0 : "-280px", width: "260px", height: "100vh", backgroundColor: theme.card, zIndex: 1000, transition: "0.3s", borderRight: `1px solid ${theme.border}`, padding: "20px", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
