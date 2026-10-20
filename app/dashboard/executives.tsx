@@ -22,7 +22,7 @@ export default function ExecutiveManager({ users, onRoleChange, theme }: { users
         <h3 style={{ color: theme.accent, margin: 0 }}>Manage Leadership</h3>
       </div>
       <p style={{ fontSize: "12px", color: theme.textMuted, marginBottom: "20px" }}>
-        Appoint members to executive roles or remove their privileges. The Master Admin cannot be demoted.
+        Appoint members to executive roles or remove their privileges.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
