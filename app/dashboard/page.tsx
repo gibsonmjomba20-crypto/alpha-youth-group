@@ -24,10 +24,8 @@ export default function Dashboard() {
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [totalGroupSavings, setTotalGroupSavings] = useState<number>(0);
-  const [searchQuery, setSearchQuery] = useState("");
   
   // FORMS
-  const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
   const [newGoal, setNewGoal] = useState("");
   const [newMeeting, setNewMeeting] = useState({ title: "", date: "", time: "", location: "" });
 
@@ -63,18 +61,14 @@ export default function Dashboard() {
     const { data: ev } = await supabase.from("events").select("*").order("event_date", { ascending: true }).limit(5);
     if (ev) setEvents(ev);
 
-    // FETCH NEW MEMBERS (Latest 3)
-    const { data: newM } = await supabase.from("profiles").select("full_name, member_code, created_at").order("created_at", { ascending: false }).limit(3);
+    const { data: newM } = await supabase.from("profiles").select("id, full_name, member_code, created_at").order("created_at", { ascending: false }).limit(3);
     if (newM) setNewMembers(newM);
 
-    // STRICT ADMIN CHECK
     if (profileData && (profileData.role === 'admin' || profileData.email === MASTER_ADMIN_EMAIL)) {
       const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (users) setAllUsers(users);
-      
       const { data: pendingP } = await supabase.from("payments").select(`*, profiles:user_id (full_name)`).eq("status", "pending");
       if (pendingP) setAllPayments(pendingP);
-      
       const { data: allS } = await supabase.from("savings").select("total_savings");
       if (allS) setTotalGroupSavings(allS.reduce((acc, curr) => acc + curr.total_savings, 0));
     }
@@ -109,7 +103,6 @@ export default function Dashboard() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", paddingBottom: "80px" }}>
         
-        {/* NOTIFICATIONS MODAL */}
         {showNotifications && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.8)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "80px" }}>
             <div style={{ backgroundColor: theme.card, width: "90%", maxWidth: "400px", borderRadius: "16px", border: `1px solid ${theme.border}`, padding: "20px", maxHeight: "70vh", overflowY: "auto" }}>
@@ -146,7 +139,6 @@ export default function Dashboard() {
           
           {activeTab === "home" && (
             <div>
-              {/* WELCOME BANNER */}
               <div style={{ position: "relative", background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", borderRadius: "16px", padding: "20px", marginBottom: "24px", border: `1px solid ${theme.purple}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold", border: `2px solid ${theme.accent}` }}>{profile.full_name.charAt(0)}</div>
@@ -155,24 +147,54 @@ export default function Dashboard() {
                 <p style={{ fontSize: "11px", color: theme.textMuted }}>Code: <span style={{ color: theme.text, fontWeight: "bold" }}>{profile.member_code}</span></p>
               </div>
 
-              {/* QUICK ACTIONS GRID */}
+              {/* QUICK ACTIONS WITH LARGE ICONS */}
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
-              <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px" }}>
-                <a href="https://chat.whatsapp.com/YOUR_GROUP_INVITE_LINK" target="_blank" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none" }}>
-                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: "#25D366", display: "flex", alignItems: "center", justifyContent: "center" }}><MessageCircle size={24} color="#fff" /></div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: theme.text }}>WhatsApp</span>
+              <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px" }}>
+                
+                <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(147, 51, 234, 0.4)` }}><Wallet size={24} color="#fff" /></div>
+                  <span style={{ fontSize: "11px", fontWeight: "600" }}>Savings</span>
+                </div>
+
+                <div onClick={() => setActiveTab("loans")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.green, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(16, 185, 129, 0.4)` }}><HandCoins size={24} color="#fff" /></div>
+                  <span style={{ fontSize: "11px", fontWeight: "600" }}>Loans</span>
+                </div>
+
+                <a href="https://chat.whatsapp.com/YOUR_GROUP_LINK" target="_blank" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none", color: theme.text }}>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(37, 211, 102, 0.4)` }}><MessageCircle size={24} color="#fff" /></div>
+                  <span style={{ fontSize: "11px", fontWeight: "600" }}>WhatsApp</span>
                 </a>
-                <a href="tel:0704785116" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none" }}>
-                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.red, display: "flex", alignItems: "center", justifyContent: "center" }}><Phone size={24} color="#fff" /></div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: theme.text }}>Support</span>
-                </a>
+
                 <div onClick={() => setActiveTab("events")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
-                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.blue, display: "flex", alignItems: "center", justifyContent: "center" }}><CalendarDays size={24} color="#fff" /></div>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.blue, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(59, 130, 246, 0.4)` }}><CalendarDays size={24} color="#fff" /></div>
                   <span style={{ fontSize: "11px", fontWeight: "600" }}>Events</span>
+                </div>
+
+                <a href="tel:0704785116" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", textDecoration: "none", color: theme.text }}>
+                  <div style={{ width: "55px", height: "55px", borderRadius: "16px", backgroundColor: theme.red, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px rgba(239, 68, 68, 0.4)` }}><Phone size={24} color="#fff" /></div>
+                  <span style={{ fontSize: "11px", fontWeight: "600" }}>Support</span>
+                </a>
+
+              </div>
+
+              {/* SAVINGS GOAL */}
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Target size={18} color={theme.accent}/> Savings Goal</h3>
+                <div style={{ width: "100%", backgroundColor: "rgba(0,0,0,0.5)", borderRadius: "10px", height: "10px", marginBottom: "8px" }}>
+                  <div style={{ width: `${goalProgress}%`, backgroundColor: theme.green, height: "100%", borderRadius: "10px" }}></div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: theme.textMuted }}>
+                  <span>KES {savings}</span>
+                  <span>Goal: KES {savingsGoal}</span>
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <input type="number" placeholder="Set new goal" value={newGoal} onChange={e => setNewGoal(e.target.value)} style={{ flex: 1, padding: "8px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white", fontSize: "12px" }} />
+                  <button onClick={handleUpdateGoal} style={{ padding: "8px 16px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}>Update</button>
                 </div>
               </div>
 
-              {/* MEETINGS SCHEDULE */}
+              {/* MEETINGS */}
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Calendar size={18} color={theme.accent}/> Meeting Schedules</h3>
                 {meetings.length === 0 ? <p style={{ fontSize: "12px", color: theme.textMuted }}>No meetings scheduled.</p> : meetings.map(m => (
@@ -196,6 +218,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+
             </div>
           )}
 
@@ -217,6 +240,7 @@ export default function Dashboard() {
         {/* BOTTOM NAVIGATION */}
         <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, backgroundColor: theme.bg, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", padding: "12px 0", zIndex: 1000 }}>
           <div onClick={() => setActiveTab("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "home" ? theme.accent : theme.textMuted }}><Home size={22} /><span style={{ fontSize: "10px" }}>Home</span></div>
+          <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "savings" ? theme.accent : theme.textMuted }}><Wallet size={22} /><span style={{ fontSize: "10px" }}>Savings</span></div>
           <div onClick={() => setActiveTab("events")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "events" ? theme.accent : theme.textMuted }}><CalendarDays size={22} /><span style={{ fontSize: "10px" }}>Events</span></div>
         </nav>
       </div>
