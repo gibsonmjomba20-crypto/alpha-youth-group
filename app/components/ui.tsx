@@ -1,14 +1,12 @@
 "use client";
 import React from "react";
 
-// 1. PREMIUM CARD TEMPLATE
 export const Card = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: () => void }) => (
   <div onClick={onClick} className={`bg-[#131C2E] border border-white/10 rounded-2xl p-5 shadow-lg transition-all duration-300 ${onClick ? 'cursor-pointer hover:bg-[#1a243a] active:scale-95' : ''} ${className}`}>
     {children}
   </div>
 );
 
-// 2. STAT CARD TEMPLATE
 export const StatCard = ({ title, value, icon, color = "#FBBF24", trend }: { title: string, value: string, icon: React.ReactNode, color?: string, trend?: string }) => (
   <div className="bg-[#131C2E] border border-white/5 rounded-2xl p-4 flex flex-col relative overflow-hidden">
     <div className="absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10" style={{ backgroundColor: color }}></div>
@@ -19,8 +17,8 @@ export const StatCard = ({ title, value, icon, color = "#FBBF24", trend }: { tit
   </div>
 );
 
-// 3. PREMIUM BUTTON TEMPLATE
-export const Button = ({ children, onClick, variant = "primary", className = "", disabled = false }: { children: React.ReactNode, onClick?: () => void, variant?: "primary" | "secondary" | "danger" | "ghost", className?: string, disabled?: boolean }) => {
+// FIXED: Added type prop and made onClick optional
+export const Button = ({ children, onClick, variant = "primary", className = "", disabled = false, type = "button" }: { children: React.ReactNode, onClick?: () => void, variant?: "primary" | "secondary" | "danger" | "ghost", className?: string, disabled?: boolean, type?: "button" | "submit" | "reset" }) => {
   const baseStyle = "px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2";
   const variants = {
     primary: "bg-[#FBBF24] text-black hover:bg-[#f59e0b]",
@@ -29,13 +27,12 @@ export const Button = ({ children, onClick, variant = "primary", className = "",
     ghost: "bg-white/5 text-white border border-white/10 hover:bg-white/10"
   };
   return (
-    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+    <button type={type} onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {children}
     </button>
   );
 };
 
-// 4. STATUS BADGE TEMPLATE
 export const Badge = ({ status }: { status: string }) => {
   const getStyle = () => {
     switch (status.toLowerCase()) {
@@ -48,15 +45,15 @@ export const Badge = ({ status }: { status: string }) => {
   return <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${getStyle()}`}>{status}</span>;
 };
 
-// 5. BOTTOM NAVIGATION TEMPLATE
-export const BottomNav = ({ activeTab, setActiveTab, tabs }: { activeTab: string, setActiveTab: (t: string) => void, tabs: {id: string, label: string, icon: React.ReactNode}[] }) => (
+// FIXED: Changed icon type to React.ReactElement<any> to fix the cloneElement error
+export const BottomNav = ({ activeTab, setActiveTab, tabs }: { activeTab: string, setActiveTab: (t: string) => void, tabs: {id: string, label: string, icon: React.ReactElement<any>}[] }) => (
   <nav className="fixed bottom-0 left-0 right-0 bg-[#0B1120]/90 backdrop-blur-lg border-t border-white/10 flex justify-around items-center pt-2 pb-6 px-2 z-50">
     {tabs.map((tab) => {
       const isActive = activeTab === tab.id;
       return (
         <div key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 cursor-pointer w-16 transition-all ${isActive ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
           <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-[#FBBF24]/20' : 'bg-transparent'}`}>
-            {React.cloneElement(tab.icon as React.ReactElement, { color: isActive ? '#FBBF24' : '#94A3B8', size: 24 })}
+            {React.cloneElement(tab.icon, { color: isActive ? '#FBBF24' : '#94A3B8', size: 24 })}
           </div>
           <span className={`text-[10px] font-bold ${isActive ? 'text-[#FBBF24]' : 'text-[#94A3B8]'}`}>{tab.label}</span>
         </div>
@@ -65,7 +62,6 @@ export const BottomNav = ({ activeTab, setActiveTab, tabs }: { activeTab: string
   </nav>
 );
 
-// 6. SKELETON LOADER
 export const Skeleton = ({ className }: { className: string }) => (
   <div className={`animate-pulse bg-white/5 rounded-xl ${className}`}></div>
 );
