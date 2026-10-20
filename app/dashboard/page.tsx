@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import ExecutiveManager from "./executives";
-import { Card, StatCard, Button, Badge, BottomNav, Skeleton } from "../components/ui";
+import { Card, StatCard, Button, Badge, Skeleton } from "../components/ui";
 import { 
   Bell, Home, Wallet, TrendingUp, TrendingDown, Briefcase, ArrowRightLeft, User, ShieldCheck, 
   Calendar, FileText, MessageCircle, Menu, ChevronRight, PlusCircle, RefreshCw, 
@@ -81,13 +81,22 @@ export default function Dashboard() {
   const handleVerifyPayment = async (tx: any, action: "verified" | "rejected", reason?: string) => {
     try {
       if (action === "verified") {
-        const { error: payError } = await supabase.from("payments").update({ status: "verified", verified_by: profile.full_name, verified_at: new Date().toISOString() }).eq("id", tx.id);
+        const { error: payError } = await supabase.from("payments").update({ 
+          status: "verified", 
+          verified_by: profile.full_name, 
+          verified_at: new Date().toISOString() 
+        }).eq("id", tx.id);
+        
         if (payError) throw new Error(`Payment update failed: ${payError.message}`);
 
         if (tx.transaction_type === 'income' || !tx.transaction_type) {
           const amountToAdd = Number(tx.amount) || 0;
+          
           const { data: currentS, error: fetchError } = await supabase.from("savings").select("total_savings").eq("user_id", tx.user_id).single();
-          if (fetchError && fetchError.code !== 'PGRST116') throw new Error(`Fetch savings failed: ${fetchError.message}`);
+          
+          if (fetchError && fetchError.code !== 'PGRST116') {
+            throw new Error(`Fetch savings failed: ${fetchError.message}`);
+          }
 
           if (currentS) {
             const newTotal = Number(currentS.total_savings || 0) + amountToAdd;
@@ -98,16 +107,24 @@ export default function Dashboard() {
             if (insError) throw new Error(`Savings insert failed: ${insError.message}`);
           }
         }
+
         await logAction("VERIFIED_PAYMENT", tx.id, { amount: tx.amount }); 
-        alert("Success! Payment Approved.");
+        alert("Success! Payment Approved and Added to Wallet.");
       } else {
-        const { error: rejError } = await supabase.from("payments").update({ status: "rejected", rejection_reason: reason, verified_by: profile.full_name }).eq("id", tx.id);
+        const { error: rejError } = await supabase.from("payments").update({ 
+          status: "rejected", 
+          rejection_reason: reason, 
+          verified_by: profile.full_name 
+        }).eq("id", tx.id);
+        
         if (rejError) throw new Error(`Rejection failed: ${rejError.message}`);
         await logAction("REJECTED_PAYMENT", tx.id, { amount: tx.amount, reason }); 
         alert("Payment Rejected.");
       }
       fetchDashboardData(); 
-    } catch (err: any) { alert("DATABASE ERROR: " + err.message); }
+    } catch (err: any) { 
+      alert("DATABASE ERROR: " + err.message); 
+    }
   };
 
   const handleManualPayment = async (e: React.FormEvent) => {
@@ -171,7 +188,7 @@ export default function Dashboard() {
   const isAdmin = profile.role === 'admin' || profile.email === MASTER_ADMIN_EMAIL;
 
   // ==========================================
-  // 1. TREASURER DASHBOARD (With UX Templates)
+  // 1. TREASURER DASHBOARD
   // ==========================================
   if (isTreasurer) {
     const pendingTx = allPayments.filter(p => p.status === 'pending');
@@ -305,7 +322,7 @@ export default function Dashboard() {
   }
 
   // ==========================================
-  // 2. ADMIN DASHBOARD (With UX Templates)
+  // 2. ADMIN DASHBOARD
   // ==========================================
   if (isAdmin) {
     return (
