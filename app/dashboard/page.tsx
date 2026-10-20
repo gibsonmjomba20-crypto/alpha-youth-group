@@ -23,6 +23,7 @@ export default function Dashboard() {
   // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allUsers, setAllUsers] = useState<any[]>([]); 
+  const [allLoans, setAllLoans] = useState<any[]>([]);
   const [totalGroupSavings, setTotalGroupSavings] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
@@ -76,8 +77,13 @@ export default function Dashboard() {
     if (profileData && (profileData.role === 'admin' || profileData.email === MASTER_ADMIN_EMAIL)) {
       const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (users) setAllUsers(users);
+      
       const { data: pendingP } = await supabase.from("payments").select(`*, profiles:user_id (full_name, phone)`).eq("status", "pending");
       if (pendingP) setAllPayments(pendingP);
+      
+      const { data: allL } = await supabase.from("loans").select("amount").eq("status", "approved");
+      if (allL) setAllLoans(allL);
+
       const { data: allS } = await supabase.from("savings").select("total_savings");
       if (allS) setTotalGroupSavings(allS.reduce((acc, curr) => acc + curr.total_savings, 0));
     }
@@ -248,29 +254,6 @@ export default function Dashboard() {
                   <button onClick={handleUpdateGoal} style={{ padding: "8px 16px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}>Update</button>
                 </div>
               </div>
-
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Calendar size={18} color={theme.accent}/> Meeting Schedules</h3>
-                {meetings.length === 0 ? <p style={{ fontSize: "12px", color: theme.textMuted }}>No meetings scheduled.</p> : meetings.map(m => (
-                  <div key={m.id} style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginBottom: "8px", borderLeft: `3px solid ${theme.blue}` }}>
-                    <p style={{ fontWeight: "bold" }}>{m.title}</p>
-                    <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{m.meeting_date} at {m.time} | {m.location}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Users size={18} color={theme.accent}/> New Members Joined</h3>
-                {newMembers.map(m => (
-                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 0", borderBottom: `1px solid ${theme.border}` }}>
-                    <div style={{ width: "30px", height: "30px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>{m.full_name.charAt(0)}</div>
-                    <div>
-                      <p style={{ fontSize: "13px", fontWeight: "bold" }}>{m.full_name}</p>
-                      <p style={{ fontSize: "10px", color: theme.textMuted }}>Code: {m.member_code || "Pending"}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -356,21 +339,44 @@ export default function Dashboard() {
 
         {adminTab === "overview" && (
           <div>
+            {/* 6 STAT CARDS */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}>
                 <Users size={24} color="#9333EA" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Total Members</p>
                 <h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allUsers.length}</h3>
               </div>
               <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                <FileText size={24} color="#FBBF24" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending</p>
+                <FileText size={24} color="#FBBF24" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Approvals</p>
                 <h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allPayments.length}</h3>
               </div>
               <div style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                <Wallet size={24} color="#10B981" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Savings</p>
+                <Wallet size={24} color="#10B981" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Group Savings</p>
                 <h3 style={{ fontSize: "24px", fontWeight: "800" }}>KES {totalGroupSavings}</h3>
+              </div>
+              <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+                <CreditCard size={24} color="#EF4444" /><p style={{ fontSize: "12px", color: "#d1d5db", marginTop: "8px" }}>Pending Payments</p>
+                <h3 style={{ fontSize: "24px", fontWeight: "800" }}>{allPayments.length}</h3>
               </div>
             </div>
 
+            {/* QUICK ACTIONS */}
+            <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "24px" }}>
+              <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #FBBF24", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><UserCheck size={22} color="#FBBF24" /></div>
+                <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Review Apps</p>
+              </div>
+              <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #9333EA", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Smartphone size={22} color="#9333EA" /></div>
+                <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Verify M-Pesa</p>
+              </div>
+              <div onClick={() => setAdminTab("settings")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #3B82F6", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Settings size={22} color="#3B82F6" /></div>
+                <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Settings</p>
+              </div>
+            </div>
+
+            {/* SCHEDULE MEETING FORM */}
             <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", color: theme.accent }}>Schedule Meeting</h3>
               <form onSubmit={handleCreateMeeting} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -378,7 +384,7 @@ export default function Dashboard() {
                 <input type="date" required value={newMeeting.date} onChange={e => setNewMeeting({...newMeeting, date: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
                 <input type="time" value={newMeeting.time} onChange={e => setNewMeeting({...newMeeting, time: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
                 <input type="text" placeholder="Location" required value={newMeeting.location} onChange={e => setNewMeeting({...newMeeting, location: e.target.value})} style={{ padding: "10px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "6px", color: "white" }} />
-                <button type="submit" style={{ padding: "10px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer" }}>PUBLISH</button>
+                <button type="submit" style={{ padding: "10px", backgroundColor: theme.accent, color: "#000", borderRadius: "6px", fontWeight: "bold", border: "none", cursor: "pointer" }}>PUBLISH MEETING</button>
               </form>
             </div>
           </div>
