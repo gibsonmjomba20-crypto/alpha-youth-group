@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Users, Target, HeartHandshake, ShieldCheck, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowRight, Users, Target, HeartHandshake, MapPin, Phone, Mail, CheckCircle2 } from "lucide-react";
 
 export default function Home() {
   return (
@@ -11,7 +11,7 @@ export default function Home() {
           <div style={{ width: "45px", height: "45px", borderRadius: "50%", border: "2px solid #FBBF24", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", fontWeight: "bold", color: "#FBBF24", boxShadow: "0 0 15px rgba(251, 191, 36, 0.4)" }}>A</div>
           <div>
             <h1 style={{ fontSize: "18px", fontWeight: "800", color: "#FBBF24", letterSpacing: "1px" }}>ALPHA YOUTH GROUP</h1>
-            <p style={{ fontSize: "9px", color: "#94A3B8", fontStyle: "italic" }}>Together We Rise and Shine!</p>
+            <p style={{ fontSize: "9px", color: "#94A3B8", fontStyle: "italic" }}>Taita Taveta • Together We Rise and Shine!</p>
           </div>
         </div>
         <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
@@ -24,15 +24,19 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section style={{ position: "relative", padding: "120px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", background: "radial-gradient(circle at top, rgba(147, 51, 234, 0.15) 0%, transparent 60%)" }}>
-        <div style={{ display: "inline-block", padding: "8px 16px", backgroundColor: "rgba(251, 191, 36, 0.1)", border: "1px solid rgba(251, 191, 36, 0.3)", borderRadius: "20px", marginBottom: "24px" }}>
-          <p style={{ fontSize: "12px", fontWeight: "bold", color: "#FBBF24", letterSpacing: "1px" }}>WELCOME TO ALPHA YOUTH GROUP</p>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", backgroundColor: "rgba(251, 191, 36, 0.1)", border: "1px solid rgba(251, 191, 36, 0.3)", borderRadius: "20px", marginBottom: "24px" }}>
+          <MapPin size={14} color="#FBBF24" />
+          <p style={{ fontSize: "12px", fontWeight: "bold", color: "#FBBF24", letterSpacing: "1px" }}>PROUDLY BASED IN TAITA TAVETA, KENYA</p>
         </div>
+        
         <h1 style={{ fontSize: "clamp(40px, 6vw, 72px)", fontWeight: "900", lineHeight: "1.1", maxWidth: "900px", marginBottom: "24px" }}>
-          Empowering the Next Generation of <span style={{ color: "#FBBF24", textShadow: "0 0 30px rgba(251, 191, 36, 0.5)" }}>Leaders</span>
+          Empowering the Youth of <span style={{ color: "#FBBF24", textShadow: "0 0 30px rgba(251, 191, 36, 0.5)" }}>Taita Taveta</span>
         </h1>
+        
         <p style={{ fontSize: "18px", color: "#94A3B8", maxWidth: "600px", marginBottom: "40px", lineHeight: "1.6" }}>
-          We are a community-driven organization dedicated to youth empowerment, economic growth, and building a self-reliant, united community.
+          We are a community-driven organization dedicated to youth empowerment, economic growth, and building a self-reliant community right here in Taita Taveta County.
         </p>
+        
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
           <Link href="/register" style={{ padding: "16px 32px", backgroundColor: "#FBBF24", color: "#000", borderRadius: "50px", textDecoration: "none", fontWeight: "800", fontSize: "16px", boxShadow: "0 0 20px rgba(251, 191, 36, 0.4)", display: "flex", alignItems: "center", gap: "8px" }}>
             Become a Member <ArrowRight size={18} />
@@ -43,20 +47,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* IMPACT STATS */}
-      <section style={{ padding: "60px 20px", backgroundColor: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ maxWidth: "1000px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px", textAlign: "center" }}>
-          <div>
-            <h2 style={{ fontSize: "48px", fontWeight: "900", color: "#FBBF24", marginBottom: "8px" }}>500+</h2>
-            <p style={{ color: "#94A3B8", fontWeight: "600" }}>Active Members</p>
+      {/* WHY TAITA TAVETA SECTION */}
+      <section style={{ padding: "80px 20px", backgroundColor: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ flex: "1 1 400px" }}>
+            <h2 style={{ fontSize: "36px", fontWeight: "800", marginBottom: "20px" }}>Rooted in <span style={{ color: "#FBBF24" }}>Taita Taveta</span></h2>
+            <p style={{ color: "#94A3B8", lineHeight: "1.8", marginBottom: "16px" }}>
+              From the beautiful hills of Taita to the vast plains of Taveta, our mission is to uplift the young people of our county. We believe in the potential of our local youth and are committed to providing them with the tools, mentorship, and financial literacy they need to succeed.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
+              <p style={{ display: "flex", alignItems: "center", gap: "10px", color: "#F8FAFC" }}><CheckCircle2 size={18} color="#10B981" /> Local Community Projects</p>
+              <p style={{ display: "flex", alignItems: "center", gap: "10px", color: "#F8FAFC" }}><CheckCircle2 size={18} color="#10B981" /> Youth Empowerment Workshops</p>
+              <p style={{ display: "flex", alignItems: "center", gap: "10px", color: "#F8FAFC" }}><CheckCircle2 size={18} color="#10B981" /> Local SACCO & Savings Groups</p>
+            </div>
           </div>
-          <div>
-            <h2 style={{ fontSize: "48px", fontWeight: "900", color: "#FBBF24", marginBottom: "8px" }}>25+</h2>
-            <p style={{ color: "#94A3B8", fontWeight: "600" }}>Community Projects</p>
-          </div>
-          <div>
-            <h2 style={{ fontSize: "48px", fontWeight: "900", color: "#FBBF24", marginBottom: "8px" }}>10K+</h2>
-            <p style={{ color: "#94A3B8", fontWeight: "600" }}>Lives Impacted</p>
+          <div style={{ flex: "1 1 300px", backgroundColor: "#131C2E", padding: "40px", borderRadius: "20px", border: "1px solid #FBBF24", textAlign: "center" }}>
+            <MapPin size={48} color="#FBBF24" style={{ margin: "0 auto 16px auto" }} />
+            <h3 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "8px" }}>Taita Taveta County</h3>
+            <p style={{ color: "#94A3B8" }}>Kenya</p>
           </div>
         </div>
       </section>
@@ -65,35 +73,26 @@ export default function Home() {
       <section style={{ padding: "100px 20px", maxWidth: "1200px", margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: "60px" }}>
           <h2 style={{ fontSize: "36px", fontWeight: "800", marginBottom: "16px" }}>Our Key Programs</h2>
-          <p style={{ color: "#94A3B8", maxWidth: "600px", margin: "0 auto" }}>We focus on practical initiatives that create real, lasting change in our community.</p>
+          <p style={{ color: "#94A3B8", maxWidth: "600px", margin: "0 auto" }}>We focus on practical initiatives that create real, lasting change in Taita Taveta.</p>
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-          {/* Card 1 */}
           <div style={{ backgroundColor: "#131C2E", padding: "32px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}>
-              <Users size={30} color="#9333EA" />
-            </div>
+            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><Users size={30} color="#9333EA" /></div>
             <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "12px" }}>Youth Empowerment</h3>
-            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Mentorship, leadership training, and workshops to help young people build confidence and skills.</p>
+            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Mentorship, leadership training, and workshops for the youth of Taita Taveta.</p>
           </div>
 
-          {/* Card 2 */}
           <div style={{ backgroundColor: "#131C2E", padding: "32px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}>
-              <Target size={30} color="#10B981" />
-            </div>
+            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><Target size={30} color="#10B981" /></div>
             <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "12px" }}>Economic Growth</h3>
-            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Financial literacy, savings groups (SACCO), and entrepreneurship support to build wealth.</p>
+            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Financial literacy, savings groups, and entrepreneurship support to build local wealth.</p>
           </div>
 
-          {/* Card 3 */}
           <div style={{ backgroundColor: "#131C2E", padding: "32px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}>
-              <HeartHandshake size={30} color="#3B82F6" />
-            </div>
+            <div style={{ width: "60px", height: "60px", borderRadius: "16px", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><HeartHandshake size={30} color="#3B82F6" /></div>
             <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "12px" }}>Community Projects</h3>
-            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Clean-ups, charity drives, and local development projects that bring us closer together.</p>
+            <p style={{ color: "#94A3B8", lineHeight: "1.6" }}>Clean-ups, charity drives, and development projects across the county.</p>
           </div>
         </div>
       </section>
@@ -101,7 +100,7 @@ export default function Home() {
       {/* CALL TO ACTION */}
       <section style={{ padding: "80px 20px", background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", borderTop: "1px solid rgba(147, 51, 234, 0.3)", borderBottom: "1px solid rgba(147, 51, 234, 0.3)", textAlign: "center" }}>
         <h2 style={{ fontSize: "36px", fontWeight: "800", marginBottom: "16px" }}>Ready to Make a Difference?</h2>
-        <p style={{ color: "#94A3B8", fontSize: "18px", marginBottom: "32px", maxWidth: "600px", margin: "0 auto 32px auto" }}>Join Alpha Youth Group today. Pay the registration fee of KES 1,000 and become part of a movement that is changing lives.</p>
+        <p style={{ color: "#94A3B8", fontSize: "18px", marginBottom: "32px", maxWidth: "600px", margin: "0 auto 32px auto" }}>Join Alpha Youth Group today. Pay the registration fee of KES 1,000 and become part of a movement that is changing lives in Taita Taveta.</p>
         <Link href="/register" style={{ padding: "16px 40px", backgroundColor: "#FBBF24", color: "#000", borderRadius: "50px", textDecoration: "none", fontWeight: "800", fontSize: "18px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
           Apply Now <ArrowRight size={20} />
         </Link>
@@ -116,7 +115,7 @@ export default function Home() {
               <div style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid #FBBF24", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold", color: "#FBBF24" }}>A</div>
               <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#FBBF24" }}>ALPHA YOUTH GROUP</h3>
             </div>
-            <p style={{ color: "#94A3B8", fontSize: "14px", lineHeight: "1.6" }}>Together we grow, support one another, and build a brighter future.</p>
+            <p style={{ color: "#94A3B8", fontSize: "14px", lineHeight: "1.6" }}>Together we grow, support one another, and build a brighter future in Taita Taveta.</p>
           </div>
 
           <div>
@@ -134,7 +133,7 @@ export default function Home() {
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <p style={{ color: "#94A3B8", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}><Phone size={16} /> 0704785116</p>
               <p style={{ color: "#94A3B8", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}><Mail size={16} /> info@alphayouthgroup.com</p>
-              <p style={{ color: "#94A3B8", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}><MapPin size={16} /> Nairobi, Kenya</p>
+              <p style={{ color: "#94A3B8", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}><MapPin size={16} /> Voi, Taita Taveta, Kenya</p>
             </div>
           </div>
 
