@@ -20,14 +20,13 @@ export default function Dashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [newMembers, setNewMembers] = useState<any[]>([]);
   
-  // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [totalGroupSavings, setTotalGroupSavings] = useState<number>(0);
   
-  // FORMS
   const [newGoal, setNewGoal] = useState("");
   const [newMeeting, setNewMeeting] = useState({ title: "", date: "", time: "", location: "" });
+  const [loanRequest, setLoanRequest] = useState({ amount: "", purpose: "" });
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home"); 
@@ -89,6 +88,13 @@ export default function Dashboard() {
     alert("Meeting Scheduled!"); setNewMeeting({ title: "", date: "", time: "", location: "" }); fetchDashboardData();
   };
 
+  const handleApplyLoan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (parseFloat(loanRequest.amount) > savings * 3) return alert(`❌ REJECTED: Max loan is KES ${savings * 3}`);
+    await supabase.from("loans").insert({ user_id: profile.id, amount: parseFloat(loanRequest.amount), purpose: loanRequest.purpose, status: "pending" });
+    alert("✅ Loan Submitted"); setLoanRequest({ amount: "", purpose: "" }); fetchDashboardData();
+  };
+
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
 
   if (loading) return <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>LOADING...</div>;
@@ -147,7 +153,6 @@ export default function Dashboard() {
                 <p style={{ fontSize: "11px", color: theme.textMuted }}>Code: <span style={{ color: theme.text, fontWeight: "bold" }}>{profile.member_code}</span></p>
               </div>
 
-              {/* QUICK ACTIONS WITH LARGE ICONS */}
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
               <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px" }}>
                 
@@ -178,7 +183,6 @@ export default function Dashboard() {
 
               </div>
 
-              {/* SAVINGS GOAL */}
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Target size={18} color={theme.accent}/> Savings Goal</h3>
                 <div style={{ width: "100%", backgroundColor: "rgba(0,0,0,0.5)", borderRadius: "10px", height: "10px", marginBottom: "8px" }}>
@@ -194,7 +198,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* MEETINGS */}
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Calendar size={18} color={theme.accent}/> Meeting Schedules</h3>
                 {meetings.length === 0 ? <p style={{ fontSize: "12px", color: theme.textMuted }}>No meetings scheduled.</p> : meetings.map(m => (
@@ -205,7 +208,6 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* NEW MEMBERS FEED */}
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}><Users size={18} color={theme.accent}/> New Members Joined</h3>
                 {newMembers.map(m => (
@@ -218,7 +220,35 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
 
+          {/* SAVINGS TAB (This was missing!) */}
+          {activeTab === "savings" && (
+            <div>
+              <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>My Savings</h2>
+              <div style={{ backgroundColor: theme.card, padding: "32px 20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center" }}>
+                <Wallet size={40} color={theme.accent} style={{ margin: "0 auto 12px auto" }} />
+                <p style={{ color: theme.textMuted, fontSize: "14px" }}>Verified Balance</p>
+                <h3 style={{ fontSize: "36px", fontWeight: "900", color: theme.accent }}>KES {savings}</h3>
+                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>Add Savings via M-Pesa</button>
+              </div>
+            </div>
+          )}
+
+          {/* LOANS TAB (This was missing!) */}
+          {activeTab === "loans" && (
+            <div>
+              <button onClick={() => setActiveTab("home")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Apply for a Loan</h2>
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+                <form onSubmit={handleApplyLoan} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <input type="number" placeholder={`Amount (Max: ${savings * 3})`} required value={loanRequest.amount} onChange={e => setLoanRequest({...loanRequest, amount: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                  <input type="text" placeholder="Purpose" required value={loanRequest.purpose} onChange={e => setLoanRequest({...loanRequest, purpose: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                  <button type="submit" style={{ padding: "12px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT APPLICATION</button>
+                </form>
+              </div>
             </div>
           )}
 
@@ -241,6 +271,7 @@ export default function Dashboard() {
         <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, backgroundColor: theme.bg, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", padding: "12px 0", zIndex: 1000 }}>
           <div onClick={() => setActiveTab("home")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "home" ? theme.accent : theme.textMuted }}><Home size={22} /><span style={{ fontSize: "10px" }}>Home</span></div>
           <div onClick={() => setActiveTab("savings")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "savings" ? theme.accent : theme.textMuted }}><Wallet size={22} /><span style={{ fontSize: "10px" }}>Savings</span></div>
+          <div onClick={() => setActiveTab("loans")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "loans" ? theme.accent : theme.textMuted }}><Briefcase size={22} /><span style={{ fontSize: "10px" }}>Loans</span></div>
           <div onClick={() => setActiveTab("events")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: activeTab === "events" ? theme.accent : theme.textMuted }}><CalendarDays size={22} /><span style={{ fontSize: "10px" }}>Events</span></div>
         </nav>
       </div>
