@@ -20,28 +20,24 @@ export default function Dashboard() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   
-  // ADMIN STATE
   const [allPayments, setAllPayments] = useState<any[]>([]); 
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [searchQuery, setSearchQuery] = useState("");
   
-  // SETTINGS & TEMPLATES
   const [appSettings, setAppSettings] = useState({ paybill_number: "", paybill_account: "", app_name: "ALPHA YOUTH GROUP", app_slogan: "Together We Rise and Shine!", default_theme: "navy" });
   const [settingsMsg, setSettingsMsg] = useState("");
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("navy");
   
   const theme = THEMES[themeName];
 
-  // FORMS
   const [loanRequest, setLoanRequest] = useState({ amount: "", purpose: "", period: "1" });
   const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
   const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "" });
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("home"); // Member view
-  const [adminTab, setAdminTab] = useState("overview"); // Admin view
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState("home"); 
+  const [adminTab, setAdminTab] = useState("overview"); 
   
   const router = useRouter();
 
@@ -92,7 +88,6 @@ export default function Dashboard() {
 
   useEffect(() => { fetchDashboardData(); }, [router]);
 
-  // --- MEMBER ACTIONS ---
   const handleApplyLoan = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(loanRequest.amount);
@@ -107,7 +102,6 @@ export default function Dashboard() {
     alert("Message sent!"); setTicketForm({ subject: "", message: "" }); fetchDashboardData();
   };
 
-  // --- ADMIN ACTIONS ---
   const handleVerifyPayment = async (id: string, uid: string, isRegistration: boolean) => {
     const code = `AYG-${Math.floor(1000 + Math.random() * 9000)}`;
     await supabase.from("payments").update({ status: "verified" }).eq("id", id);
@@ -166,7 +160,6 @@ export default function Dashboard() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", paddingBottom: "80px", transition: "background-color 0.3s" }}>
         
-        {/* HEADER */}
         <header style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.border}`, backgroundColor: theme.bg, position: "sticky", top: 0, zIndex: 100 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
              <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "900", fontStyle: "italic" }}>A</div>
@@ -182,7 +175,6 @@ export default function Dashboard() {
           
           {activeTab === "home" && (
             <div>
-              {/* WELCOME BANNER */}
               <div style={{ position: "relative", background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", borderRadius: "16px", padding: "20px", marginBottom: "24px", border: `1px solid ${theme.purple}`, overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: theme.purple, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold", border: `2px solid ${theme.accent}` }}>{profile.full_name.charAt(0)}</div>
@@ -191,7 +183,6 @@ export default function Dashboard() {
                 <p style={{ fontSize: "11px", color: theme.textMuted }}>Member Code: <span style={{ color: theme.text, fontWeight: "bold" }}>{profile.member_code || "AYG-2025"}</span></p>
               </div>
 
-              {/* SUMMARY CARDS */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
                 <div onClick={() => setActiveTab("savings")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}><div style={{ padding: "8px", backgroundColor: "rgba(147, 51, 234, 0.2)", borderRadius: "10px" }}><Wallet size={20} color={theme.purple} /></div><p style={{ fontSize: "12px", color: theme.textMuted }}>My Savings</p></div>
@@ -203,7 +194,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* QUICK ACTIONS (Horizontal Scroll with Big Icons) */}
               <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
               <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px", marginBottom: "24px" }}>
                 <div onClick={() => router.push('/dashboard/payment')} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", minWidth: "70px", cursor: "pointer" }}>
@@ -224,7 +214,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* REFERRAL SYSTEM */}
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}`, marginBottom: "24px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}><Share2 size={20} color={theme.accent} /><h3 style={{ fontSize: "16px", fontWeight: "700" }}>Refer a Friend</h3></div>
                 <div style={{ display: "flex", gap: "8px" }}>
@@ -232,61 +221,80 @@ export default function Dashboard() {
                   <button onClick={copyReferral} style={{ padding: "10px 16px", backgroundColor: theme.accent, color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>COPY</button>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* MEETINGS */}
+          {activeTab === "savings" && (
+            <div>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Savings</h2>
+              <div style={{ backgroundColor: theme.card, padding: "32px 20px", borderRadius: "16px", border: `1px solid ${theme.border}`, textAlign: "center" }}>
+                <Wallet size={40} color={theme.accent} style={{ margin: "0 auto 12px auto" }} />
+                <p style={{ color: theme.textMuted, fontSize: "14px" }}>Verified Balance</p>
+                <h3 style={{ fontSize: "36px", fontWeight: "900", color: theme.accent }}>KES {savings}</h3>
+                <button onClick={() => router.push('/dashboard/payment')} style={{ marginTop: "20px", padding: "12px 24px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>Add Savings</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "loans" && (
+            <div>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Loans</h2>
               <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Calendar size={18} color={theme.blue} /> Meeting Schedules</h3>
-                {meetings.length === 0 ? <p style={{ fontSize: "12px", color: theme.textMuted }}>No meetings scheduled.</p> : meetings.map(m => (
-                  <div key={m.id} style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "12px", borderRadius: "8px", marginBottom: "8px" }}>
-                    <p style={{ fontWeight: "bold" }}>{m.title}</p>
-                    <p style={{ fontSize: "12px", color: theme.textMuted, marginTop: "4px" }}>{m.meeting_date} at {m.time} | {m.location}</p>
+                <form onSubmit={handleApplyLoan} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <input type="number" placeholder={`Amount (Max: ${loanLimit})`} required value={loanRequest.amount} onChange={e => setLoanRequest({...loanRequest, amount: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                  <input type="text" placeholder="Purpose" required value={loanRequest.purpose} onChange={e => setLoanRequest({...loanRequest, purpose: e.target.value})} style={{ padding: "12px", backgroundColor: "rgba(0,0,0,0.3)", border: `1px solid ${theme.border}`, borderRadius: "8px", color: "white" }} />
+                  <button type="submit" style={{ padding: "12px", background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)", color: "#000", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer" }}>SUBMIT</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "activity" && (
+            <div>
+              <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>Transactions</h2>
+              <div style={{ backgroundColor: theme.card, padding: "20px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
+                {payments.length === 0 ? <p style={{ color: theme.textMuted, textAlign: "center" }}>No transactions.</p> : payments.map(p => (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${theme.border}`, padding: "12px 0" }}>
+                    <div><p style={{ fontWeight: "bold", fontSize: "14px" }}>{p.mpesa_code}</p><p style={{ fontSize: "10px", color: theme.textMuted }}>{p.payment_date}</p></div>
+                    <div style={{ textAlign: "right" }}><p style={{ fontWeight: "bold", color: theme.green }}>+ KES {p.amount}</p></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* MORE MENU (3x3 Grid with Big Icons) */}
           {activeTab === "more" && (
             <div>
               <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "20px" }}>More Services</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-                
                 <div onClick={() => setActiveTab("events_page")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><CalendarDays size={24} color={theme.blue} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Events</p>
                 </div>
-
                 <div onClick={() => setActiveTab("projects_page")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Landmark size={24} color={theme.green} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Projects</p>
                 </div>
-
                 <div onClick={() => setActiveTab("opportunities_page")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><GraduationCap size={24} color={theme.accent} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Opportunities</p>
                 </div>
-
                 <div onClick={() => setActiveTab("documents_page")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Folder size={24} color={theme.purple} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Documents</p>
                 </div>
-
                 <div onClick={() => setActiveTab("support_page")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(239, 68, 68, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><HelpCircle size={24} color={theme.red} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Support</p>
                 </div>
-
                 <div onClick={() => setActiveTab("settings")} style={{ backgroundColor: theme.card, padding: "16px", borderRadius: "16px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                   <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(148, 163, 184, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Settings size={24} color={theme.textMuted} /></div>
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>Settings</p>
                 </div>
-
               </div>
             </div>
           )}
 
-          {/* SUB PAGES */}
           {["events_page", "projects_page", "opportunities_page", "documents_page", "support_page"].includes(activeTab) && (
             <button onClick={() => setActiveTab("more")} style={{ background: "transparent", border: "none", color: theme.textMuted, display: "flex", alignItems: "center", gap: "5px", marginBottom: "20px", cursor: "pointer", fontWeight: "bold" }}><ArrowLeft size={16} /> Back</button>
           )}
@@ -379,7 +387,6 @@ export default function Dashboard() {
   return (
     <div style={{ backgroundColor: theme.bg, color: theme.text, fontFamily: "sans-serif", minHeight: "100vh", paddingBottom: "80px", transition: "background-color 0.3s" }}>
       
-      {/* HEADER */}
       <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)", padding: "20px", borderBottom: `1px solid ${theme.purple}`, borderBottomLeftRadius: "24px", borderBottomRightRadius: "24px" }}>
          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
            <div>
@@ -398,36 +405,27 @@ export default function Dashboard() {
         
         {adminTab === "overview" && (
           <div>
-            {/* ADMIN STAT CARDS WITH BIG ICONS */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: "rgba(147, 51, 234, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(147, 51, 234, 0.3)" }}>
-                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
-                  <Users size={24} color="#9333EA" />
-                </div>
+                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><Users size={24} color="#9333EA" /></div>
                 <p style={{ fontSize: "13px", color: "#d1d5db" }}>Total Members</p>
                 <h3 style={{ fontSize: "28px", fontWeight: "800", color: "#fff" }}>{allUsers.length}</h3>
               </div>
               
               <div style={{ backgroundColor: "rgba(251, 191, 36, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
-                  <FileText size={24} color="#FBBF24" />
-                </div>
+                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><FileText size={24} color="#FBBF24" /></div>
                 <p style={{ fontSize: "13px", color: "#d1d5db" }}>Pending Approvals</p>
                 <h3 style={{ fontSize: "28px", fontWeight: "800", color: "#fff" }}>{allUsers.filter(u => u.membership_status === 'pending').length}</h3>
               </div>
               
               <div style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
-                  <Wallet size={24} color="#10B981" />
-                </div>
+                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><Wallet size={24} color="#10B981" /></div>
                 <p style={{ fontSize: "13px", color: "#d1d5db" }}>Verified Savings</p>
                 <h3 style={{ fontSize: "24px", fontWeight: "800", color: "#fff" }}>KES {totalGroupSavings.toLocaleString()}</h3>
               </div>
               
               <div style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
-                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(239, 68, 68, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
-                  <CreditCard size={24} color="#EF4444" />
-                </div>
+                <div style={{ width: "45px", height: "45px", borderRadius: "12px", backgroundColor: "rgba(239, 68, 68, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}><CreditCard size={24} color="#EF4444" /></div>
                 <p style={{ fontSize: "13px", color: "#d1d5db" }}>Pending Payments</p>
                 <h3 style={{ fontSize: "28px", fontWeight: "800", color: "#fff" }}>{allPayments.length}</h3>
               </div>
@@ -435,17 +433,14 @@ export default function Dashboard() {
 
             <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}><Zap size={18} color={theme.accent}/> Quick Actions</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-              
               <div onClick={() => setAdminTab("approvals")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #FBBF24", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(251, 191, 36, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><UserCheck size={22} color="#FBBF24" /></div>
                 <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Review Apps</p>
               </div>
-
               <div onClick={() => setAdminTab("finance")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #9333EA", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(147, 51, 234, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Smartphone size={22} color="#9333EA" /></div>
                 <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Verify M-Pesa</p>
               </div>
-
               <div onClick={() => setAdminTab("broadcast")} style={{ backgroundColor: theme.card, padding: "16px 10px", borderRadius: "16px", border: "1px solid #3B82F6", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{ width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "rgba(59, 130, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}><Megaphone size={22} color="#3B82F6" /></div>
                 <p style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", textAlign: "center" }}>Announce</p>
@@ -454,7 +449,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ... other admin tabs remain unchanged ... */}
         {adminTab === "approvals" && (
           <div style={{ backgroundColor: theme.card, padding: "24px", borderRadius: "16px", border: `1px solid ${theme.border}` }}>
             <h3 style={{ marginBottom: "16px", color: theme.accent }}>Pending Registrations (KES 1000)</h3>
