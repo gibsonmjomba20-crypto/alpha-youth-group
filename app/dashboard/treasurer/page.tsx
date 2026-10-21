@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { Card, StatCard, Button } from "../../../components/ui";
+import { Card, StatCard, Button } from "../../components/ui";
 import { Menu, X, LogOut, BarChart3, ShieldCheck, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
 export default function TreasurerPortal() {

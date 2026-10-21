@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { Card, StatCard, Button } from "../../../components/ui";
+import { Card, StatCard, Button } from "../../components/ui";
 import { Menu, X, LogOut, LayoutDashboard, Users, History, Activity, Landmark } from "lucide-react";
 
 export default function AdminPortal() {

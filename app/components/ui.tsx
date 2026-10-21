@@ -7,6 +7,16 @@ export const Card = ({ children, className = "", onClick }: { children: React.Re
   </div>
 );
 
+export const StatCard = ({ title, value, icon, color = "#9333EA", trend }: { title: string, value: string, icon: React.ReactNode, color?: string, trend?: string }) => (
+  <div className="bg-[#18181B] border border-white/5 rounded-2xl p-4 flex flex-col relative overflow-hidden group">
+    <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-5 group-hover:opacity-20 transition-opacity" style={{ backgroundColor: color }}></div>
+    <div className="mb-3 p-2 rounded-xl w-fit bg-black/40" style={{ color }}>{icon}</div>
+    <p className="text-xs text-gray-400 font-semibold mb-1">{title}</p>
+    <h3 className="text-xl font-bold text-white">{value}</h3>
+    {trend && <p className="text-[10px] mt-1 font-bold" style={{ color }}>{trend}</p>}
+  </div>
+);
+
 export const Button = ({ children, onClick, variant = "primary", className = "", disabled = false, type = "button" }: { children: React.ReactNode, onClick?: () => void, variant?: "primary" | "secondary" | "danger" | "ghost", className?: string, disabled?: boolean, type?: "button" | "submit" | "reset" }) => {
   const baseStyle = "px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2";
   const variants = {
@@ -48,4 +58,8 @@ export const BottomNav = ({ activeTab, setActiveTab, tabs }: { activeTab: string
       );
     })}
   </nav>
+);
+
+export const Skeleton = ({ className }: { className: string }) => (
+  <div className={`animate-pulse bg-white/5 rounded-xl ${className}`}></div>
 );
